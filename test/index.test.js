@@ -30,9 +30,8 @@ test('index', async() => {
         const readme = await (await fetch(url)).text();
         assert.match(readme, /^# hostlocal/);
 
-        let resp = await fetch(new URL('__DOES_NOT_EXIST__.html', url));
+        const resp = await fetch(new URL('__DOES_NOT_EXIST__.html', url));
         assert.equal(resp.status, 404);
-
       } catch (e) {
         reject(e);
       } finally {
