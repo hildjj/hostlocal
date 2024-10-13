@@ -1,6 +1,6 @@
 # hostlocal
 
-Description
+Serve files from a directory.
 
 ## Run
 
