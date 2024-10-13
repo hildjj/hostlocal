@@ -32,7 +32,8 @@
   "dependencies": {
     "commander": "12.1.0",
     "jsrsasign": "11.1.0",
-    "mime-types": "2.1.35"
+    "mime-types": "2.1.35",
+    "open": "10.1.0"
   },
   "devDependencies": {
     "@cto.af/eslint-config": "5.0.0",
@@ -42,7 +43,6 @@
     "c8": "10.1.2",
     "eslint-plugin-jsdoc": "50.3.2",
     "eslint-plugin-markdown": "5.1.0",
-    "open": "10.1.0",
     "package-extract": "2.3.0",
     "snappy-snaps": "1.1.0",
     "typedoc": "0.26.9",
