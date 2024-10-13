@@ -1,0 +1,29 @@
+// Data Snap v1
+
+exports[`help stderr`] = {
+  "data": "",
+  "meta": {
+    "expires": null
+  }
+}
+
+exports[`help stdout`] = {
+  "data": "Usage: hostlocal [options] [directory]\n\nArguments:\n  directory                Directory to serve (default: cwd)\n\nOptions:\n  -V, --version            output the version number\n  --certDir \u003Cdirectory\u003E    Directory, relative to cwd, to cache cert info\n                           (default: \".cert\")\n  --notAfterDays \u003Cnumber\u003E  How many days is the certificate valid? (default: 7)\n  -o, --open \u003Cpath\u003E        Open this path in the default browser.  Relative to\n                           server root.  If empty, do not open anything.\n                           (default: \"\u002F\")\n  -p, --port \u003Cnumber\u003E      Port to serve content from. (default: 8111)\n  -q, --quiet              Do not do logging\n  -h, --help               display help for command\n",
+  "meta": {
+    "expires": null
+  }
+}
+
+exports[`parse stderr`] = {
+  "data": "error: option '-p, --port \u003Cnumber\u003E' argument 'aaaa' is invalid. not a valid integer.\n",
+  "meta": {
+    "expires": null
+  }
+}
+
+exports[`parse stdout`] = {
+  "data": "",
+  "meta": {
+    "expires": null
+  }
+}

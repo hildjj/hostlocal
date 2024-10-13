@@ -2,11 +2,15 @@
 
 Description
 
-## Installation
+## Run
 
 ```sh
-npm install hostlocal
+npx hostlocal
 ```
+
+## CLI
+
+
 
 ## API
 
