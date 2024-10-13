@@ -43,5 +43,5 @@ await hostLocal({port: 8111});
 ```
 
 ---
-[![Build Status](https://github.com/hildjj/hostlocal/workflows/Tests/badge.svg)](https://github.com/hildjj/hostlocal/actions?query=workflow%3ATests)
-[![codecov](https://codecov.io/gh/hildjj/hostlocal/branch/main/graph/badge.svg?token=N7B7YLIDM4)](https://codecov.io/gh/hildjj/hostlocal)
+[![Tests](https://github.com/hildjj/hostlocal/actions/workflows/node.js.yml/badge.svg)](https://github.com/hildjj/hostlocal/actions/workflows/node.js.yml)
+[![codecov](https://codecov.io/gh/hildjj/hostlocal/graph/badge.svg?token=HHS0QQ7NUF)](https://codecov.io/gh/hildjj/hostlocal)
