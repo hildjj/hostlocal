@@ -17,6 +17,9 @@ importers:
       mime-types:
         specifier: 2.1.35
         version: 2.1.35
+      open:
+        specifier: 10.1.0
+        version: 10.1.0
     devDependencies:
       '@cto.af/eslint-config':
         specifier: 5.0.0
@@ -39,9 +42,6 @@ importers:
       eslint-plugin-markdown:
         specifier: 5.1.0
         version: 5.1.0(eslint@9.12.0)
-      open:
-        specifier: 10.1.0
-        version: 10.1.0
       package-extract:
         specifier: 2.3.0
         version: 2.3.0
