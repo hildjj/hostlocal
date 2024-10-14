@@ -39,6 +39,8 @@ export async function cli(
     .version(version)
     .option('-c, --config <file>', `If the given file exists, import it as a module and use its default export as the options.  Name is relative to cwd. Command line parameters overwrite options from the config file. (default: "${DEFAULT_HOST_OPTIONS.config}")`)
     .option('--certDir <directory>', `Directory, relative to cwd, to cache cert info. (default: "${DEFAULT_HOST_OPTIONS.certDir}")`)
+    .option('-g, --glob <pattern>', 'Set of files to watch.  If one of these changes, execute the command in the --exec option')
+    .option('-e, --exec <shell command>', `Execute this command when the glob changes. (default: "${DEFAULT_HOST_OPTIONS.exec}")`)
     .option('--notAfterDays <number>', `How many days is the certificate valid? (default: ${DEFAULT_HOST_OPTIONS.notAfterDays})`, toInt)
     .option('-o, --open <path>', `Open this path in the default browser.  Relative to server root.  If empty, do not open anything. (default: "${DEFAULT_HOST_OPTIONS.open}")`)
     .option('-p, --port <number>', `Port to serve content from. (default: ${DEFAULT_HOST_OPTIONS.port})`, toInt)

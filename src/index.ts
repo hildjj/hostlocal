@@ -4,6 +4,7 @@ import {name as pkgName, version as pkgVersion} from './version.js';
 import type {AddressInfo} from 'node:net';
 import {Buffer} from 'node:buffer';
 import type {IncomingMessage} from 'node:http';
+import {WatchGlob} from './watchGlob.js';
 import {WebSocketServer} from 'ws';
 import chokidar from 'chokidar';
 import fs from 'node:fs/promises';
@@ -19,6 +20,12 @@ export interface HostOptions extends CertOptions {
 
   /** Config file name. */
   config?: string | null;
+
+  /** Command to execute when watch glob matches. */
+  exec?: string;
+
+  /** Watch this glob.  When it changes, execute the exec command. */
+  glob?: string | null;
 
   /** List of files to try in order if a directory is specified as URL. */
   index?: string[];
@@ -42,6 +49,8 @@ export interface HostOptions extends CertOptions {
 export const DEFAULT_HOST_OPTIONS: Required<HostOptions> = {
   ...DEFAULT_CERT_OPTIONS,
   config: '.hostlocal.js',
+  exec: 'npm run build',
+  glob: null,
   index: ['index.html', 'index.htm', 'README.md'],
   onClose: null,
   onListen: null,
@@ -213,5 +222,14 @@ export async function hostLocal(
       watcher.close();
       server.close();
     });
+  }
+
+  if (opts.glob) {
+    const wg = new WatchGlob({
+      glob: opts.glob,
+      shellCommand: opts.exec,
+      signal: opts.signal,
+    });
+    await wg.start();
   }
 }

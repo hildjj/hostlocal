@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
 
-const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'hostlocal-test-'));
+const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'hostlocal-test-cert-'));
 
 test.after(async() => {
   await fs.rm(tmp, {recursive: true, force: true});
