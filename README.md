@@ -1,6 +1,11 @@
 # hostlocal
 
-Serve files from a directory.
+Serve files from a directory over HTTP/1.1 and HTTP/2, with live reload
+notifications over a websocket.  It will automatically create self-signed
+certificates.
+
+This server is quite opinionated about its defaults to make setup as easy
+as possible... if you have a problem shaped like mine.
 
 ## Run
 
