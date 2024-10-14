@@ -10,3 +10,5 @@ src/
 test/
 tsconfig.json
 typedoc.config.cjs
+.cert/
+.hostlocal.js

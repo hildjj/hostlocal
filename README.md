@@ -11,7 +11,7 @@ npx hostlocal docs
 
 ## CLI
 
-```txt
+```text
 Usage: hostlocal [options] [directory]
 
 Arguments:
@@ -19,7 +19,12 @@ Arguments:
 
 Options:
   -V, --version            output the version number
-  --certDir <directory>    Directory, relative to cwd, to cache cert info
+  -c, --config <file>      If the given file exists, import it as a module and
+                           use its default export as the options.  Name is
+                           relative to cwd. Command line parameters overwrite
+                           options from the config file. (default:
+                           ".hostlocal.js")
+  --certDir <directory>    Directory, relative to cwd, to cache cert info.
                            (default: ".cert")
   --notAfterDays <number>  How many days is the certificate valid? (default: 7)
   -o, --open <path>        Open this path in the default browser.  Relative to
@@ -28,6 +33,23 @@ Options:
   -p, --port <number>      Port to serve content from. (default: 8111)
   -q, --quiet              Do not do logging
   -h, --help               display help for command
+```
+
+## Config files
+
+Instead of using the command line, you can store your configuration in a
+file, by default called ".hostlocal.js".  This is an ES6 module with a default
+export containing your config.  Its default value is:
+
+```js
+export default {
+  certDir: '.cert',
+  index: ['index.html', 'index.htm', 'README.md'],
+  notAfterDays: 7,
+  open: '/',
+  port: 8111,
+  quiet: false,
+};
 ```
 
 ## API

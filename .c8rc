@@ -5,6 +5,7 @@
   ],
   "exclude": [
     "**/test/**",
-    "**/node_modules/**"
+    "**/node_modules/**",
+    ".hostlocal.js"
   ]
 }

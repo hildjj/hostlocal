@@ -2,7 +2,10 @@
 import {type CertOptions, DEFAULT_CERT_OPTIONS, createCert} from './cert.js';
 import {name as pkgName, version as pkgVersion} from './version.js';
 import type {AddressInfo} from 'node:net';
+import {Buffer} from 'node:buffer';
 import type {IncomingMessage} from 'node:http';
+import {WebSocketServer} from 'ws';
+import chokidar from 'chokidar';
 import fs from 'node:fs/promises';
 import https from 'node:https';
 import mt from 'mime-types';
@@ -13,6 +16,9 @@ export type ListenCallback = (url: string) => void;
 export type EmptyCallback = () => void;
 
 export interface HostOptions extends CertOptions {
+
+  /** Config file name. */
+  config?: string | null;
 
   /** List of files to try in order if a directory is specified as URL. */
   index?: string[];
@@ -35,6 +41,7 @@ export interface HostOptions extends CertOptions {
 
 export const DEFAULT_HOST_OPTIONS: Required<HostOptions> = {
   ...DEFAULT_CERT_OPTIONS,
+  config: '.hostlocal.js',
   index: ['index.html', 'index.htm', 'README.md'],
   onClose: null,
   onListen: null,
@@ -44,13 +51,13 @@ export const DEFAULT_HOST_OPTIONS: Required<HostOptions> = {
   signal: null,
 };
 
-function log(opts: Required<HostOptions>, req: IncomingMessage): void {
+function log(opts: Required<HostOptions>, req: IncomingMessage | string): void {
   if (!opts.quiet) {
     console.log(
       new Date()
         .toLocaleString('sv')
         .replace(' ', 'T'),
-      req.url
+      typeof req === 'string' ? req : req.url
     );
   }
 }
@@ -73,6 +80,12 @@ async function findExistingFile(
   throw new Error('No index file found');
 }
 
+const clientScript = Buffer.concat([
+  Buffer.from('\n<script type="module">\n'),
+  await fs.readFile(new URL('./client.js', import.meta.url)),
+  Buffer.from('\n</script>\n'),
+]);
+
 /**
  * Server a directory via HTTPS.
  *
@@ -83,12 +96,35 @@ export async function hostLocal(
   root: string,
   options: HostOptions
 ): Promise<void> {
+  let config = {};
+  if (!Object.hasOwn(options, 'config') || options.config) {
+    try {
+      const fullConfig = path.resolve(
+        process.cwd(),
+        options.config || (DEFAULT_HOST_OPTIONS.config as string)
+      );
+      const c = await import(fullConfig);
+      config = c.default;
+    } catch (e) {
+      const err = e as NodeJS.ErrnoException;
+      if (err.code !== 'ERR_MODULE_NOT_FOUND') {
+        throw e;
+      }
+    }
+  }
   const opts: Required<HostOptions> = {
     ...DEFAULT_HOST_OPTIONS,
+    ...config,
     ...options,
   };
 
   const Server = `${pkgName}/${pkgVersion}`;
+  const watcher = chokidar.watch([], {
+    awaitWriteFinish: {
+      stabilityThreshold: 300,
+      pollInterval: 100,
+    },
+  });
 
   const base = await fs.realpath(root);
   const cert = await createCert(opts);
@@ -114,6 +150,7 @@ export async function hostLocal(
       }
 
       buf = await fs.readFile(file);
+      watcher.add(file);
     } catch (e) {
       const err = e as NodeJS.ErrnoException;
       if (err?.code === 'ENOENT') {
@@ -125,10 +162,14 @@ export async function hostLocal(
       }
       return;
     }
+    const mime = mt.lookup(file) || 'text/plain';
+    if (mime === 'text/html') {
+      buf = Buffer.concat([buf, clientScript]);
+    }
     res.writeHead(200, {
       Server,
       'Content-Length': buf.length,
-      'Content-Type': mt.lookup(file) || 'text/plain',
+      'Content-Type': mime,
     });
     res.end(buf);
   }).listen(opts.port, 'localhost', () => {
@@ -150,7 +191,27 @@ export async function hostLocal(
     server.on('close', opts.onClose);
   }
 
+  const wss = new WebSocketServer({server});
+  wss.on('connection', ws => {
+    ws.on('error', (er: Error) => log(opts, er.message));
+  });
+
+  watcher.on('change', f => {
+    // TODO: if we're getting a bunch of flashes, debounce these and send
+    // a [...Set<string>].
+    for (const ws of wss.clients) {
+      if (ws.readyState === ws.OPEN) {
+        ws.send(JSON.stringify({
+          update: `/${path.relative(root, f)}`,
+        }));
+      }
+    }
+  });
+
   if (opts.signal) {
-    opts.signal.addEventListener('abort', () => server.close());
+    opts.signal.addEventListener('abort', () => {
+      watcher.close();
+      server.close();
+    });
   }
 }

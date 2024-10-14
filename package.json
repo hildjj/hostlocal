@@ -25,21 +25,26 @@
     "test": "c8 node --test",
     "posttest": "npm run ts",
     "docs": "typedoc",
+    "start": "node bin/hostlocal.js",
     "ts": "tsc",
     "build": "npm run test && npm run lint && npm run docs && npm pack --dry-run",
     "version": "package-extract -so src/version.ts name version && git add src/version.ts"
   },
   "dependencies": {
+    "bufferutil": "4.0.8",
+    "chokidar": "4.0.1",
     "commander": "12.1.0",
     "jsrsasign": "11.1.0",
     "mime-types": "2.1.35",
-    "open": "10.1.0"
+    "open": "10.1.0",
+    "ws": "8.18.0"
   },
   "devDependencies": {
     "@cto.af/eslint-config": "5.0.0",
     "@types/jsrsasign": "10.5.14",
     "@types/mime-types": "2.1.4",
     "@types/node": "22.7.5",
+    "@types/ws": "8.5.12",
     "c8": "10.1.2",
     "eslint-plugin-jsdoc": "50.3.2",
     "eslint-plugin-markdown": "5.1.0",

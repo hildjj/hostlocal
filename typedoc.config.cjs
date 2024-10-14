@@ -6,7 +6,7 @@ module.exports = {
   out: 'docs',
   cleanOutputDir: true,
   sidebarLinks: {
-    GitHub: 'https://github.com/hildjj/hildjj/hostlocal/',
+    GitHub: 'https://github.com/hildjj/hostlocal/',
     Documentation: 'http://hildjj.github.io/hostlocal/',
   },
   navigation: {
