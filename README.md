@@ -11,7 +11,7 @@ npx hostlocal docs
 
 ## CLI
 
-```txt
+```text
 Usage: hostlocal [options] [directory]
 
 Arguments:
