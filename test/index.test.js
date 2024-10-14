@@ -29,7 +29,7 @@ test('index', async() => {
     onListen: async url => {
       try {
         const readme = await (await fetch(url)).text();
-        assert.match(readme, /^# hostlocal/);
+        assert.match(readme, /^<!DOCTYPE html>/);
 
         const resp = await fetch(new URL('__DOES_NOT_EXIST__.html', url));
         assert.equal(resp.status, 404);

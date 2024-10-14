@@ -45,6 +45,7 @@ export async function cli(
     .option('-o, --open <path>', `Open this path in the default browser.  Relative to server root.  If empty, do not open anything. (default: "${DEFAULT_HOST_OPTIONS.open}")`)
     .option('-p, --port <number>', `Port to serve content from. (default: ${DEFAULT_HOST_OPTIONS.port})`, toInt)
     .option('-q, --quiet', 'Do not do logging')
+    .option('--rawMarkdown', 'Do not process markdown into HTML')
     .addArgument(new Argument('[directory]', 'Directory to serve').default(process.cwd(), 'cwd'))
     .action((directory, opts) => hostLocal(directory, opts))
     .parseAsync(args);

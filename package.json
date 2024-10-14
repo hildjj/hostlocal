@@ -44,6 +44,7 @@
     "chokidar": "4.0.1",
     "commander": "12.1.0",
     "jsrsasign": "11.1.0",
+    "markdown-it": "14.1.0",
     "mime-types": "2.1.35",
     "open": "10.1.0",
     "ws": "8.18.0"
@@ -51,6 +52,7 @@
   "devDependencies": {
     "@cto.af/eslint-config": "5.0.0",
     "@types/jsrsasign": "10.5.14",
+    "@types/markdown-it": "14.1.2",
     "@types/mime-types": "2.1.4",
     "@types/node": "22.7.5",
     "@types/ws": "8.5.12",

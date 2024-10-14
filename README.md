@@ -42,6 +42,7 @@ Options:
                               (default: "/")
   -p, --port <number>         Port to serve content from. (default: 8111)
   -q, --quiet                 Do not do logging
+  --rawMarkdown               Do not process markdown into HTML
   -h, --help                  display help for command
 ```
 
@@ -60,6 +61,7 @@ export default {
   notAfterDays: 7,
   open: '/',
   port: 8111,
+  rawMarkdown: false,
   quiet: false,
 };
 ```
