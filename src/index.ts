@@ -3,12 +3,11 @@ import {type CertOptions, DEFAULT_CERT_OPTIONS, createCert} from './cert.js';
 import {name as pkgName, version as pkgVersion} from './version.js';
 import type {AddressInfo} from 'node:net';
 import {Buffer} from 'node:buffer';
-import type {IncomingMessage} from 'node:http';
 import {WatchGlob} from './watchGlob.js';
 import {WebSocketServer} from 'ws';
 import chokidar from 'chokidar';
 import fs from 'node:fs/promises';
-import https from 'node:https';
+import http2 from 'node:http2';
 import mt from 'mime-types';
 import open from 'open';
 import path from 'node:path';
@@ -60,7 +59,10 @@ export const DEFAULT_HOST_OPTIONS: Required<HostOptions> = {
   signal: null,
 };
 
-function log(opts: Required<HostOptions>, req: IncomingMessage | string): void {
+function log(
+  opts: Required<HostOptions>,
+  req: http2.Http2ServerRequest | string
+): void {
   if (!opts.quiet) {
     console.log(
       new Date()
@@ -137,8 +139,9 @@ export async function hostLocal(
 
   const base = await fs.realpath(root);
   const cert = await createCert(opts);
-  const server = https.createServer({
+  const server = http2.createSecureServer({
     ...cert,
+    allowHTTP1: true,
   }, async(req, res) => {
     let buf = null;
     let file = null;
@@ -200,6 +203,7 @@ export async function hostLocal(
     server.on('close', opts.onClose);
   }
 
+  // @ts-expect-error See https://github.com/websockets/ws/issues/1458
   const wss = new WebSocketServer({server});
   wss.on('connection', ws => {
     ws.on('error', (er: Error) => log(opts, er.message));

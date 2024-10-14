@@ -1,10 +1,19 @@
 {
   "name": "hostlocal",
   "version": "0.2.0",
-  "decription": "",
+  "decription": "Serve files from a directory over HTTP/1.1 and HTTP/2, with live reload notifications over a websocket.",
   "main": "lib/index.js",
   "type": "module",
-  "keywords": [],
+  "keywords": [
+    "http",
+    "https",
+    "http2",
+    "server",
+    "config file",
+    "websocket",
+    "live-reload",
+    "localhost"
+  ],
   "author": "Joe Hildebrand <joe-github@cursive.net>",
   "license": "MIT",
   "repository": {
