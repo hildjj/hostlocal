@@ -25,11 +25,13 @@
     "test": "c8 node --test",
     "posttest": "npm run ts",
     "docs": "typedoc",
+    "start": "node bin/hostlocal.js",
     "ts": "tsc",
     "build": "npm run test && npm run lint && npm run docs && npm pack --dry-run",
     "version": "package-extract -so src/version.ts name version && git add src/version.ts"
   },
   "dependencies": {
+    "chokidar": "4.0.1",
     "commander": "12.1.0",
     "jsrsasign": "11.1.0",
     "mime-types": "2.1.35",

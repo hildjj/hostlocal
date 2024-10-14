@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 
-import {Argument, Command, InvalidArgumentError, OutputConfiguration} from 'commander';
+import {
+  Argument,
+  Command,
+  InvalidArgumentError,
+  OutputConfiguration,
+} from 'commander';
 import {DEFAULT_HOST_OPTIONS, hostLocal} from './index.js';
 import {version} from './version.js';
 
@@ -28,12 +33,15 @@ export async function cli(
     program.configureOutput(out);
     program.exitOverride();
   }
+
+  // Set default docs manually.
   await program
     .version(version)
-    .option('--certDir <directory>', 'Directory, relative to cwd, to cache cert info', DEFAULT_HOST_OPTIONS.certDir)
-    .option('--notAfterDays <number>', 'How many days is the certificate valid?', toInt, DEFAULT_HOST_OPTIONS.notAfterDays)
-    .option('-o, --open <path>', 'Open this path in the default browser.  Relative to server root.  If empty, do not open anything.', DEFAULT_HOST_OPTIONS.open)
-    .option('-p, --port <number>', 'Port to serve content from.', toInt, DEFAULT_HOST_OPTIONS.port)
+    .option('-c, --config <file>', `If the given file exists, import it as a module and use its default export as the options.  Name is relative to cwd. Command line parameters overwrite options from the config file. (default: "${DEFAULT_HOST_OPTIONS.config}")`)
+    .option('--certDir <directory>', `Directory, relative to cwd, to cache cert info. (default: "${DEFAULT_HOST_OPTIONS.certDir}")`)
+    .option('--notAfterDays <number>', `How many days is the certificate valid? (default: ${DEFAULT_HOST_OPTIONS.notAfterDays})`, toInt)
+    .option('-o, --open <path>', `Open this path in the default browser.  Relative to server root.  If empty, do not open anything. (default: "${DEFAULT_HOST_OPTIONS.open}")`)
+    .option('-p, --port <number>', `Port to serve content from. (default: ${DEFAULT_HOST_OPTIONS.port})`, toInt)
     .option('-q, --quiet', 'Do not do logging')
     .addArgument(new Argument('[directory]', 'Directory to serve').default(process.cwd(), 'cwd'))
     .action((directory, opts) => hostLocal(directory, opts))

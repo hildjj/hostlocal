@@ -14,6 +14,9 @@ export type EmptyCallback = () => void;
 
 export interface HostOptions extends CertOptions {
 
+  /** Config file name. */
+  config?: string | null;
+
   /** List of files to try in order if a directory is specified as URL. */
   index?: string[];
 
@@ -35,6 +38,7 @@ export interface HostOptions extends CertOptions {
 
 export const DEFAULT_HOST_OPTIONS: Required<HostOptions> = {
   ...DEFAULT_CERT_OPTIONS,
+  config: '.hostlocal.js',
   index: ['index.html', 'index.htm', 'README.md'],
   onClose: null,
   onListen: null,
@@ -83,8 +87,25 @@ export async function hostLocal(
   root: string,
   options: HostOptions
 ): Promise<void> {
+  let config = {};
+  if (!Object.hasOwn(options, 'config') || options.config) {
+    try {
+      const fullConfig = path.resolve(
+        process.cwd(),
+        options.config || (DEFAULT_HOST_OPTIONS.config as string)
+      );
+      const c = await import(fullConfig);
+      config = c.default;
+    } catch (e) {
+      const err = e as NodeJS.ErrnoException;
+      if (err.code !== 'ERR_MODULE_NOT_FOUND') {
+        throw e;
+      }
+    }
+  }
   const opts: Required<HostOptions> = {
     ...DEFAULT_HOST_OPTIONS,
+    ...config,
     ...options,
   };
 

@@ -21,10 +21,11 @@ test('index', async() => {
   });
 
   await hostLocal(root, {
-    signal: ac.signal,
-    quiet: true,
+    config: null,
     open: null,
     port: 9111,
+    quiet: true,
+    signal: ac.signal,
     onListen: async url => {
       try {
         const readme = await (await fetch(url)).text();
