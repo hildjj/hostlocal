@@ -1,68 +1,20 @@
 /* eslint-disable no-console */
-import {type CertOptions, DEFAULT_CERT_OPTIONS, createCert} from './cert.js';
+import {type HostOptions, normalizeOptions} from './opts.js';
+import {addClientScript, markdownToHTML} from './html.js';
 import {name as pkgName, version as pkgVersion} from './version.js';
 import type {AddressInfo} from 'node:net';
-import {Buffer} from 'node:buffer';
+import {DebounceSet} from './debounce.js';
 import {WatchGlob} from './watchGlob.js';
 import {WebSocketServer} from 'ws';
 import chokidar from 'chokidar';
+import {createCert} from './cert.js';
 import fs from 'node:fs/promises';
 import http2 from 'node:http2';
-import markdownit from 'markdown-it';
 import mt from 'mime-types';
 import open from 'open';
 import path from 'node:path';
 
-export type ListenCallback = (url: string) => void;
-export type EmptyCallback = () => void;
-
-export interface HostOptions extends CertOptions {
-
-  /** Config file name. */
-  config?: string | null;
-
-  /** Command to execute when watch glob matches. */
-  exec?: string;
-
-  /** Watch this glob.  When it changes, execute the exec command. */
-  glob?: string | null;
-
-  /** List of files to try in order if a directory is specified as URL. */
-  index?: string[];
-
-  onListen?: ListenCallback | null;
-  onClose?: EmptyCallback | null;
-
-  /** Path to open. */
-  open?: string;
-
-  /** TCP Port to listen on. */
-  port?: number;
-
-  /** No logging if true. */
-  quiet?: boolean;
-
-  /** If true, do not process markdown to HTML. */
-  rawMarkdown?: boolean;
-
-  /** Abort this to stop the server. */
-  signal?: AbortSignal | null;
-}
-
-export const DEFAULT_HOST_OPTIONS: Required<HostOptions> = {
-  ...DEFAULT_CERT_OPTIONS,
-  config: '.hostlocal.js',
-  exec: 'npm run build',
-  glob: null,
-  index: ['index.html', 'index.htm', 'README.md'],
-  onClose: null,
-  onListen: null,
-  open: '/',
-  port: 8111,
-  quiet: false,
-  rawMarkdown: false,
-  signal: null,
-};
+export type {HostOptions, EmptyCallback, ListenCallback} from './opts.js';
 
 function log(
   opts: Required<HostOptions>,
@@ -77,12 +29,6 @@ function log(
     );
   }
 }
-
-const md = markdownit({
-  html: true,
-  linkify: true,
-  typographer: true,
-});
 
 async function findExistingFile(
   dir: string,
@@ -99,14 +45,22 @@ async function findExistingFile(
       // Ignored
     }
   }
-  throw new Error('No index file found');
+  const er = new Error('No index file found') as NodeJS.ErrnoException;
+  er.code = 'ENOENT';
+  throw er;
 }
 
-const clientScript = Buffer.concat([
-  Buffer.from('\n<script type="module">\n'),
-  await fs.readFile(new URL('./client.js', import.meta.url)),
-  Buffer.from('\n</script>\n'),
-]);
+function notify(wss: WebSocketServer, urls: string[]): void {
+  const msg = JSON.stringify({
+    type: 'change',
+    urls,
+  });
+  for (const ws of wss.clients) {
+    if (ws.readyState === ws.OPEN) {
+      ws.send(msg);
+    }
+  }
+}
 
 /**
  * Server a directory via HTTPS.
@@ -118,34 +72,12 @@ export async function hostLocal(
   root: string,
   options: HostOptions
 ): Promise<void> {
-  let config = {};
-  if (!Object.hasOwn(options, 'config') || options.config) {
-    try {
-      const fullConfig = path.resolve(
-        process.cwd(),
-        options.config || (DEFAULT_HOST_OPTIONS.config as string)
-      );
-      const c = await import(fullConfig);
-      config = c.default;
-    } catch (e) {
-      const err = e as NodeJS.ErrnoException;
-      if (err.code !== 'ERR_MODULE_NOT_FOUND') {
-        throw e;
-      }
-    }
-  }
-  const opts: Required<HostOptions> = {
-    ...DEFAULT_HOST_OPTIONS,
-    ...config,
-    ...options,
-  };
+  const opts = await normalizeOptions(options);
 
   const Server = `${pkgName}/${pkgVersion}`;
   const watcher = chokidar.watch([], {
-    awaitWriteFinish: {
-      stabilityThreshold: 300,
-      pollInterval: 100,
-    },
+    atomic: true,
+    ignoreInitial: true,
   });
 
   const base = await fs.realpath(root);
@@ -171,7 +103,6 @@ export async function hostLocal(
       if (stat.isDirectory()) {
         file = await findExistingFile(file, opts.index);
       }
-
       buf = await fs.readFile(file);
       watcher.add(file);
     } catch (e) {
@@ -188,47 +119,14 @@ export async function hostLocal(
     let mime = mt.lookup(file) || 'text/plain';
     switch (mime) {
       case 'text/html':
-        buf = Buffer.concat([buf, clientScript]);
+        buf = addClientScript(buf);
         break;
       case 'text/markdown': {
         if (opts.rawMarkdown) {
           break;
         }
-        const mkd = buf.toString();
-        const html = `\
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>${req.url}</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.7.0/github-markdown-dark.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 
-  <style>
-    .markdown-body {
-      box-sizing: border-box;
-      min-width: 200px;
-      max-width: 980px;
-      margin: 0 auto;
-      padding: 45px;
-    }
-
-    @media (max-width: 767px) {
-      .markdown-body {
-        padding: 15px;
-      }
-    }
-  </style>
-</head>
-<body class="markdown-body">
-${md.render(mkd)}
-</body>
-</html>
-<script>hljs.highlightAll();</script>
-`;
-        buf = Buffer.concat([Buffer.from(html), clientScript]);
+        buf = markdownToHTML(buf, req.url);
         mime = 'text/html';
         break;
       }
@@ -244,9 +142,7 @@ ${md.render(mkd)}
   }).listen(opts.port, 'localhost', () => {
     const {port} = server.address() as AddressInfo;
     const url = `https://localhost:${port}/`;
-    if (!opts.quiet) {
-      console.log(`Listening on ${url}`);
-    }
+    log(opts, `Listening on ${url}`);
     if (opts.open) {
       // Ignore promise
       open(new URL(opts.open, url).toString());
@@ -264,18 +160,39 @@ ${md.render(mkd)}
   const wss = new WebSocketServer({server});
   wss.on('connection', ws => {
     ws.on('error', (er: Error) => log(opts, er.message));
+    ws.on('message', msg => {
+      const jmsg = JSON.parse(msg.toString());
+      switch (jmsg?.type) {
+        case 'shutdown':
+          // Completely insecure when shutTimes < Infinity.
+          // Only set shutTimes when testing.
+          if (--opts.shutTimes <= 0) {
+            process.exit(0);
+          }
+          break;
+        default:
+          // Ignored
+          break;
+      }
+    });
   });
 
+  const notifySet = new DebounceSet((paths: string[]) => {
+    const urls =
+      paths.map(f => `https://localhost:${opts.port}/${path.relative(root, f)}`);
+    notify(wss, urls);
+  }, 100, opts.signal);
+
   watcher.on('change', f => {
-    // TODO: if we're getting a bunch of flashes, debounce these and send
-    // a [...Set<string>].
-    for (const ws of wss.clients) {
-      if (ws.readyState === ws.OPEN) {
-        ws.send(JSON.stringify({
-          update: `/${path.relative(root, f)}`,
-        }));
-      }
-    }
+    notifySet.add(f);
+  });
+
+  watcher.on('add', f => {
+    notifySet.add(f);
+  });
+
+  watcher.on('unlink', f => {
+    watcher.add(f);
   });
 
   if (opts.signal) {
@@ -285,12 +202,14 @@ ${md.render(mkd)}
     });
   }
 
-  if (opts.glob) {
-    const wg = new WatchGlob({
-      glob: opts.glob,
-      shellCommand: opts.exec,
-      signal: opts.signal,
-    });
-    await wg.start();
+  if (opts.glob?.length) {
+    for (const glob of opts.glob) {
+      const wg = new WatchGlob({
+        glob,
+        shellCommand: opts.exec,
+        signal: opts.signal,
+      });
+      await wg.start();
+    }
   }
 }

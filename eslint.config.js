@@ -12,6 +12,7 @@ export default [
       '**/*.d.ts',
       'lib/**',
       'docs/**',
+      'test/fixtures/**', // Intentionally invalid
     ],
   },
   ...es6,
