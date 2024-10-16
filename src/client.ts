@@ -7,3 +7,11 @@ ws.onmessage = (_ev): void => {
 ws.onerror = (ev): void => {
   console.error('WebSocket error', ev);
 };
+
+/** Shut down the server. */
+(globalThis as any).hostLocalSendShutdown = (): void => {
+  ws.send(JSON.stringify({
+    type: 'shutdown',
+    url: window.location.href,
+  }));
+};

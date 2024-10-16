@@ -5,7 +5,9 @@
   ],
   "exclude": [
     "**/test/**",
+    "**/test-web/**",
     "**/node_modules/**",
-    ".hostlocal.js"
+    ".hostlocal.js",
+    "playwright.config.js"
   ]
 }
