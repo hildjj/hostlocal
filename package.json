@@ -30,13 +30,15 @@
   "scripts": {
     "clean": "rimraf coverage docs lib playwright-report test-results",
     "lint": "eslint .",
+    "spotcheck": "node --test test/*.test.js",
     "precoverage": "tsc --inlineSourceMap",
-    "coverage": "node --test test/*.test.js && playwright test",
+    "coverage": "npm run spotcheck && playwright test",
     "poscoverage": "npm run ts",
     "test": "c8 npm run coverage",
     "docs": "typedoc",
     "start": "node bin/hostlocal.js",
     "ts": "tsc",
+    "build:noweb": "npm run docs && npm run ts && npm run spotcheck && npm run lint && npm pack --dry-run",
     "build": "npm run docs && npm run test && npm run lint && npm pack --dry-run",
     "version": "package-extract -so src/version.ts name version && git add src/version.ts"
   },
