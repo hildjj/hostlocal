@@ -1,7 +1,7 @@
 import {type CertOptions, DEFAULT_CERT_OPTIONS} from './cert.js';
 import path from 'node:path';
 
-export type ListenCallback = (url: string) => void;
+export type ListenCallback = (url: URL) => void;
 export type EmptyCallback = () => void;
 
 export interface HostOptions extends CertOptions {
