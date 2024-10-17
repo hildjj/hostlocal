@@ -25,6 +25,7 @@
     "url": "https://github.com/hildjj/hostlocal/issues"
   },
   "files": [
+    "assets",
     "bin",
     "lib"
   ],
@@ -74,7 +75,7 @@
     "snappy-snaps": "1.1.0",
     "typedoc": "0.26.10",
     "typescript": "5.6.3",
-    "typescript-eslint": "8.9.0"
+    "typescript-eslint": "8.10.0"
   },
   "packageManager": "pnpm@9.12.2",
   "engines": {

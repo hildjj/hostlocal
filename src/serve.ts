@@ -3,6 +3,7 @@ import type {Http2ServerRequest, Http2ServerResponse, OutgoingHttpHeaders} from 
 import type {FSWatcher} from 'chokidar';
 import type {RequiredHostOptions} from './opts.js';
 import assert from 'node:assert';
+import {fileURLToPath} from 'node:url';
 import fs from 'node:fs/promises';
 import mt from 'mime-types';
 import ofs from 'node:fs';
@@ -14,6 +15,11 @@ export interface ServerState {
   watcher: FSWatcher;
   headers: OutgoingHttpHeaders;
 }
+
+const favicon = await fs.realpath(
+  fileURLToPath(new URL('../assets/favicon.ico', import.meta.url))
+);
+const faviconStat = await fs.stat(favicon);
 
 async function findExistingFile(
   dir: string,
@@ -63,11 +69,25 @@ export async function serve(
 
     const url = new URL(req.url, state.baseURL);
     const {pathname} = url;
-    let file = await fs.realpath(path.resolve(path.join(state.base, pathname)));
-    if (!file.startsWith(state.base)) {
-      return error(403, 'Invalid path');
+    let file = path.resolve(path.join(state.base, pathname));
+    let stat: ofs.Stats | undefined = undefined;
+    try {
+      file = await fs.realpath(file);
+      if (!file.startsWith(state.base)) {
+        return error(403, 'Invalid path');
+      }
+      stat = await fs.stat(file);
+    } catch (e) {
+      // If no favicon, use ours.
+      const err = e as NodeJS.ErrnoException;
+      if ((req.url === '/favicon.ico') && (err.code === 'ENOENT')) {
+        file = favicon;
+        stat = faviconStat;
+      } else {
+        throw e;
+      }
     }
-    let stat = await fs.stat(file);
+    assert(stat);
     if (stat.isDirectory()) {
       file = await findExistingFile(file, opts.index);
       stat = await fs.stat(file);
