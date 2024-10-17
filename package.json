@@ -24,11 +24,16 @@
   "bugs": {
     "url": "https://github.com/hildjj/hostlocal/issues"
   },
+  "files": [
+    "bin",
+    "lib"
+  ],
   "bin": {
     "hostlocal": "./bin/hostlocal.js"
   },
   "scripts": {
     "clean": "rimraf coverage docs lib playwright-report test-results",
+    "dev": "node bin/hostlocal.js -c .hostCoverage.js",
     "lint": "eslint .",
     "spotcheck": "node --test test/*.test.js",
     "precoverage": "tsc --inlineSourceMap",

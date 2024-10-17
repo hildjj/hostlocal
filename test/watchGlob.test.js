@@ -22,7 +22,8 @@ test('watchGlob', async() => {
   const wg = new WatchGlob({
     glob: '*.txt',
     cwd: tmp,
-    shellCommand: `${process.argv0} -v`,
+    exec: `${process.argv0} -v`,
+    initial: true,
   });
 
   let count = 0;
@@ -32,7 +33,9 @@ test('watchGlob', async() => {
     wg.on('error', reject);
     wg.on('exec', async() => {
       count++;
-      await wg.close();
+      if (count > 2) {
+        await wg.close();
+      }
     });
     wg.on('close', () => {
       resolve();
@@ -45,19 +48,23 @@ test('watchGlob', async() => {
       ))
       .catch(reject);
   });
-  assert.equal(count, 3);
+  assert.equal(count, 4);
 });
 
 test('watchGlob invalid', async() => {
   assert.throws(() => new WatchGlob());
   assert.throws(() => new WatchGlob({}));
-  assert.throws(() => new WatchGlob({shellCommand: 'foo'}));
+  assert.throws(() => new WatchGlob({exec: 'foo'}));
+  assert.throws(() => new WatchGlob({exec: 'foo', glob: []}));
+
+  // Missing cwd
+  assert.doesNotThrow(() => new WatchGlob({exec: 'foo', glob: 'bar'}));
 
   const ac = new AbortController();
   const wg = new WatchGlob({
     glob: '*.js',
     cwd: tmp,
-    shellCommand: `${process.argv0} -v`,
+    exec: `${process.argv0} -v`,
     signal: ac.signal,
   });
 
@@ -83,7 +90,7 @@ test('watchGlob bad exec exit', async t => {
   const wg = new WatchGlob({
     glob: '*.ts',
     cwd: tmp,
-    shellCommand: 'exit 1',
+    exec: 'exit 1',
   });
   await wg.start();
   await new Promise((resolve, reject) => {
@@ -112,7 +119,7 @@ test('watchGlob exec signal', async t => {
   const wg = new WatchGlob({
     glob: '*.mts',
     cwd: tmp,
-    shellCommand: 'kill $$', // Shell signals itself
+    exec: 'kill $$', // Shell signals itself
   });
   await wg.start();
   await new Promise((resolve, reject) => {
