@@ -23,7 +23,8 @@ Arguments:
   directory                   Directory to serve (default: cwd)
 
 Options:
-  -V, --version               output the version number
+  -6, --ipv6                  Listen on IPv6 only, if host supports both IPv4
+                              and IPv6.
   -c, --config <file>         If the given file exists, import it as a module
                               and use its default export as the options.  Name
                               is relative to cwd. Command line parameters
@@ -31,19 +32,24 @@ Options:
                               ".hostlocal.js")
   --certDir <directory>       Directory, relative to cwd, to cache cert info.
                               (default: ".cert")
-  -g, --glob <pattern>        Set of files to watch.  If one of these changes,
-                              execute the command in the --exec option
   -e, --exec <shell command>  Execute this command when the glob changes.
                               (default: "npm run build")
+  -g, --glob <pattern>        Set of files to watch.  If one of these changes,
+                              execute the command in the --exec option.  Can be
+                              specified multiple times.
+  -h, --help                  display help for command
+  --host <address>            Hostname or IP address to listen on. "::" for
+                              everything. (default: "localhost")
   --notAfterDays <number>     How many days is the certificate valid? (default:
                               7)
   -o, --open <path>           Open this path in the default browser.  Relative
                               to server root.  If empty, do not open anything.
                               (default: "/")
-  -p, --port <number>         Port to serve content from. (default: 8111)
+  -p, --port <number>         Port to serve content from.  Use 0 to get an
+                              unused port. (default: 8111)
   -q, --quiet                 Do not do logging
   --rawMarkdown               Do not process markdown into HTML
-  -h, --help                  display help for command
+  -V, --version               output the version number
 ```
 
 ## Config files
@@ -55,14 +61,18 @@ export containing your config.  Its default value is:
 ```js
 export default {
   certDir: '.cert',
+  config: '.hostlocal.js',
   exec: 'npm run build',
-  glob: null,
+  glob: [],
+  host: 'localhost',
   index: ['index.html', 'index.htm', 'README.md'],
+  ipv6: false,
   notAfterDays: 7,
   open: '/',
   port: 8111,
-  rawMarkdown: false,
   quiet: false,
+  rawMarkdown: false,
+  shutTimes: Infinity,
 };
 ```
 

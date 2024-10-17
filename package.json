@@ -24,11 +24,16 @@
   "bugs": {
     "url": "https://github.com/hildjj/hostlocal/issues"
   },
+  "files": [
+    "bin",
+    "lib"
+  ],
   "bin": {
     "hostlocal": "./bin/hostlocal.js"
   },
   "scripts": {
     "clean": "rimraf coverage docs lib playwright-report test-results",
+    "dev": "node bin/hostlocal.js -c .hostCoverage.js",
     "lint": "eslint .",
     "spotcheck": "node --test test/*.test.js",
     "precoverage": "tsc --inlineSourceMap",
@@ -61,7 +66,7 @@
     "@types/node": "22.7.6",
     "@types/ws": "8.5.12",
     "c8": "10.1.2",
-    "eslint-plugin-jsdoc": "50.4.1",
+    "eslint-plugin-jsdoc": "50.4.3",
     "eslint-plugin-markdown": "5.1.0",
     "node-mocks-http": "1.16.1",
     "package-extract": "2.3.0",

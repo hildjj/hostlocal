@@ -1,4 +1,5 @@
 /* eslint-disable no-console */
+import type {AddressInfo, ListenOptions} from 'node:net';
 import {type HostOptions, normalizeOptions} from './opts.js';
 import {type ServerState, serve} from './serve.js';
 import {name as pkgName, version as pkgVersion} from './version.js';
@@ -42,35 +43,58 @@ function notify(wss: WebSocketServer, urls: string[]): void {
  * @param options Options.
  */
 export async function hostLocal(
-  root: string,
+  root: string | null,
   options: HostOptions
 ): Promise<void> {
   const opts = await normalizeOptions(options);
-
+  if (root) {
+    opts.dir = root;
+  }
   const cert = await createCert(opts);
+
+  if (opts.glob?.length) {
+    const wg = new WatchGlob(opts);
+    wg.on('error', er => log(opts, er.message));
+    await wg.start();
+  }
+
+  const urlHost = opts.host.includes(':') ? `[${opts.host}]` : opts.host;
   const state: ServerState = {
     headers: {
       Server: `${pkgName}/${pkgVersion}`,
     },
-    base: await fs.realpath(root),
-    baseURL: new URL(`https://localhost:${opts.port}/`),
+    base: await fs.realpath(opts.dir),
+    baseURL: new URL(`https://${urlHost}:${opts.port}/`),
     watcher: chokidar.watch([], {
       atomic: true,
       ignoreInitial: true,
     }),
   };
 
+  const listenOpts: ListenOptions = {
+    port: opts.port,
+    host: opts.host,
+    ipv6Only: opts.ipv6,
+  };
+  if (opts.signal) {
+    listenOpts.signal = opts.signal;
+  }
   const server = http2.createSecureServer({
     ...cert,
     allowHTTP1: true,
   }, async(req, res) => {
     const code = await serve(opts, state, req, res);
     log(opts, req.method, String(code), req.url);
-  }).listen(opts.port, 'localhost', () => {
+  }).listen(listenOpts, () => {
+    // If port was 0, we now need to recalc baseURL
+    const {port} = server.address() as AddressInfo;
+    state.baseURL = new URL(`https://${urlHost}:${port}/`);
+
     log(opts, 'Listening on', state.baseURL.toString());
     if (opts.open) {
       // Ignore promise
-      open(new URL(opts.open, state.baseURL).toString());
+      open(new URL(opts.open, state.baseURL).toString())
+        .catch((er: unknown) => console.error(er));
     }
     if (opts.onListen) {
       opts.onListen.call(server, state.baseURL);
@@ -101,7 +125,10 @@ export async function hostLocal(
 
   const notifySet = new DebounceSet((paths: string[]) => {
     const urls =
-      paths.map(f => new URL(path.relative(root, f), state.baseURL).toString());
+      paths.map(f => new URL(
+        path.relative(opts.dir, f),
+        state.baseURL
+      ).toString());
     notify(wss, urls);
   }, 100, opts.signal);
 
@@ -122,15 +149,4 @@ export async function hostLocal(
     state.watcher.close();
     server.close();
   });
-
-  if (opts.glob?.length) {
-    for (const glob of opts.glob) {
-      const wg = new WatchGlob({
-        glob,
-        shellCommand: opts.exec,
-        signal: opts.signal,
-      });
-      await wg.start();
-    }
-  }
 }

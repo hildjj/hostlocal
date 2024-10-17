@@ -13,15 +13,20 @@ export interface WatchOptions {
   cwd?: string;
 
   /**
-   * Glob to watch.
+   * Globs to watch.
    * @see https://nodejs.org/api/fs.html#fspromisesglobpattern-options
    */
-  glob: string;
+  glob?: string[] | null;
+
+  /**
+   * Run exec when starting up?
+   */
+  initial?: boolean;
 
   /**
    * Command to run when glob changes.
    */
-  shellCommand: string;
+  exec: string;
 
   /**
    * Debounce changes by this amount of time in milliseconds.
@@ -33,6 +38,12 @@ export interface WatchOptions {
    * Abort signal to watch to halt watching and child process execution.
    */
   signal?: AbortSignal | null;
+
+  /**
+   * Time, in ms, to allow exec to run.
+   * @default 30000
+   */
+  timeout?: number | null;
 }
 
 export const watchTiming = {
@@ -43,11 +54,13 @@ export const watchTiming = {
 };
 
 export class WatchGlob extends EventEmitter {
-  #glob: string;
+  #glob: string | string[];
   #cmd: string;
   #cwd: string;
   #debounceTimout: number;
+  #initial: boolean;
   #signal: AbortSignal | undefined;
+  #timeout: number | undefined;
   #watch: FSWatcher | undefined = undefined;
 
   /**
@@ -57,18 +70,23 @@ export class WatchGlob extends EventEmitter {
    */
   public constructor(options: WatchOptions) {
     super();
+
+    if (!options.exec) {
+      throw new TypeError('exec is required');
+    }
+    if (!options.glob ||
+        (Array.isArray(options.glob) && (options.glob.length === 0))) {
+      throw new TypeError('glob is required');
+    }
+
     this.#glob = options.glob;
     this.#cwd = options.cwd ?? process.cwd();
-    this.#cmd = options.shellCommand;
+    this.#cmd = options.exec;
+    this.#initial = Boolean(options.initial);
     this.#debounceTimout = options.debounce ?? 100;
     this.#signal = options.signal ?? undefined;
+    this.#timeout = options.timeout ?? undefined;
 
-    if (!this.#cmd) {
-      throw new RangeError('No shellCommand specified');
-    }
-    if (!this.#glob) {
-      throw new RangeError('No glob specified');
-    }
     this.#signal?.addEventListener('abort', () => {
       if (this.#watch) {
         this.close();
@@ -95,6 +113,9 @@ export class WatchGlob extends EventEmitter {
       exec().catch((er: unknown) => this.emit('error', er));
     });
     this.emit('start');
+    if (this.#initial) {
+      await this.#exec();
+    }
   }
 
   /**
@@ -118,6 +139,7 @@ export class WatchGlob extends EventEmitter {
         stdio: 'inherit',
         windowsHide: true,
         signal: this.#signal,
+        timeout: this.#timeout,
       });
       child.on('error', reject);
       child.on('close', (code, signal) => {
