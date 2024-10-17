@@ -1,5 +1,3 @@
-import { time } from "console";
-
 export default {
   port: 9000,
   dir: 'coverage/lcov-report',
