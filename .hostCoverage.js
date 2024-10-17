@@ -1,3 +1,5 @@
+import { time } from "console";
+
 export default {
   port: 9000,
   dir: 'coverage/lcov-report',
@@ -10,4 +12,5 @@ export default {
   ],
   exec: 'npm run test',
   initial: true,
+  timeout: 30000,
 };

@@ -20,7 +20,7 @@ npx hostlocal docs
 Usage: hostlocal [options] [directory]
 
 Arguments:
-  directory                   Directory to serve (default: cwd)
+  directory                   Directory to serve. (default: cwd
 
 Options:
   -6, --ipv6                  Listen on IPv6 only, if host supports both IPv4
@@ -40,6 +40,8 @@ Options:
   -h, --help                  display help for command
   --host <address>            Hostname or IP address to listen on. "::" for
                               everything. (default: "localhost")
+  -i, --initial               If glob is specified, run the exec command on
+                              startup, before listening
   --notAfterDays <number>     How many days is the certificate valid? (default:
                               7)
   -o, --open <path>           Open this path in the default browser.  Relative
@@ -49,6 +51,7 @@ Options:
                               unused port. (default: 8111)
   -q, --quiet                 Do not do logging
   --rawMarkdown               Do not process markdown into HTML
+  -t, --timeout <number>      Time, in ms, to allow exec to run.
   -V, --version               output the version number
 ```
 
@@ -72,7 +75,7 @@ export default {
   port: 8111,
   quiet: false,
   rawMarkdown: false,
-  shutTimes: Infinity,
+  timeout: null,
 };
 ```
 
