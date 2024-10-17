@@ -58,7 +58,7 @@
     "@types/jsrsasign": "10.5.14",
     "@types/markdown-it": "14.1.2",
     "@types/mime-types": "2.1.4",
-    "@types/node": "22.7.5",
+    "@types/node": "22.7.6",
     "@types/ws": "8.5.12",
     "c8": "10.1.2",
     "eslint-plugin-jsdoc": "50.4.1",
@@ -71,7 +71,7 @@
     "typescript": "5.6.3",
     "typescript-eslint": "8.9.0"
   },
-  "packageManager": "pnpm@9.12.1",
+  "packageManager": "pnpm@9.12.2",
   "engines": {
     "node": ">=22"
   }

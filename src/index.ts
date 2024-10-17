@@ -95,9 +95,6 @@ export async function hostLocal(
             process.exit(0);
           }
           break;
-        default:
-          // Ignored
-          break;
       }
     });
   });

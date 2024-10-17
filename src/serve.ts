@@ -1,9 +1,11 @@
+import {AddClient, type FileInfo, MarkdownToHtml} from './html.js';
 import type {Http2ServerRequest, Http2ServerResponse, OutgoingHttpHeaders} from 'node:http2';
-import {addClientScript, markdownToHTML} from './html.js';
 import type {FSWatcher} from 'chokidar';
 import type {RequiredHostOptions} from './opts.js';
+import assert from 'node:assert';
 import fs from 'node:fs/promises';
 import mt from 'mime-types';
+import ofs from 'node:fs';
 import path from 'node:path';
 
 export interface ServerState {
@@ -53,55 +55,56 @@ export async function serve(
     return code;
   }
 
-  let buf = null;
-  let file = null;
-  let pathname = null;
+  let info: FileInfo | undefined = undefined;
   try {
     if (req.method !== 'GET') {
       return error(405, `Method ${req.method} not supported`);
     }
 
     const url = new URL(req.url, state.baseURL);
-    ({pathname} = url);
-    file = await fs.realpath(path.resolve(path.join(state.base, pathname)));
+    const {pathname} = url;
+    let file = await fs.realpath(path.resolve(path.join(state.base, pathname)));
     if (!file.startsWith(state.base)) {
       return error(403, 'Invalid path');
     }
-    const stat = await fs.stat(file);
-
+    let stat = await fs.stat(file);
     if (stat.isDirectory()) {
       file = await findExistingFile(file, opts.index);
+      stat = await fs.stat(file);
     }
-    buf = await fs.readFile(file);
+
+    info = {
+      file,
+      pathname,
+      size: stat.size,
+    };
+    info.stream = ofs.createReadStream(file);
     state.watcher.add(file);
   } catch (e) {
     const err = e as NodeJS.ErrnoException;
     if (err?.code === 'ENOENT') {
-      return error(404, `No such file: "${pathname}"`);
+      return error(404, `No such file: "${req.url}"`);
     }
     return error(500, (e as Error).message);
   }
-  let mime = mt.lookup(file) || 'text/plain';
-  switch (mime) {
-    case 'text/html':
-      buf = addClientScript(buf);
-      break;
-    case 'text/markdown': {
-      if (opts.rawMarkdown) {
-        break;
-      }
-
-      buf = markdownToHTML(buf, pathname);
-      mime = 'text/html';
-      break;
-    }
-    default:
-      break;
+  assert(info);
+  let mime = mt.lookup(info.file) || 'text/plain';
+  if ((mime === 'text/markdown') && !opts.rawMarkdown) {
+    info.stream = info.stream.pipe(new MarkdownToHtml(info));
+    mime = 'text/html';
   }
-  res.writeHead(200, {
+  if (mime === 'text/html') {
+    info.stream = info.stream.pipe(new AddClient(info));
+  }
+
+  const headers: OutgoingHttpHeaders = {
     ...state.headers,
-    'Content-Length': buf.length,
     'Content-Type': mime,
-  }).end(buf);
+  };
+  if (info.size) {
+    headers['Content-Length'] = info.size; // Otherwise chunked
+  }
+  res.writeHead(200, headers);
+  info.stream.pipe(res);
   return 200;
 }
