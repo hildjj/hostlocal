@@ -84,7 +84,7 @@ export async function serve(
         file = F_FAVICON;
         stat = await fs.stat(file);
       }
-    } else if (relative.startsWith(`..${path.sep}`)) {
+    } else if (relative.startsWith('..')) {
       // Paths can be bad from the client, or bad because of symlinks.
       // Since this is a dev server, we're going to serve symlinks even if
       // they point outside the root directory.

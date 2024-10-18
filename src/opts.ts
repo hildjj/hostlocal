@@ -86,7 +86,7 @@ export const DEFAULT_HOST_OPTIONS: RequiredHostOptions = {
   ipv6: false,
   onClose: null,
   onListen: null,
-  open: '/',
+  open: '.',
   port: 8111,
   prefix: '',
   quiet: false,
@@ -106,7 +106,7 @@ export const DEFAULT_HOST_OPTIONS: RequiredHostOptions = {
 export async function normalizeOptions(
   options: HostOptions
 ): Promise<RequiredHostOptions> {
-  let config = {};
+  let config: HostOptions = Object.create(null);
   if (!Object.hasOwn(options, 'config') || options.config) {
     try {
       const fullConfig = pathToFileURL(path.resolve(
