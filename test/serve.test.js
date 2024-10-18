@@ -25,8 +25,8 @@ test('serve', async() => {
     }),
   };
 
-  function reqRes(url, method = 'GET') {
-    const req = httpMocks.createRequest({method, url});
+  function reqRes(url, rOpts = {method: 'GET'}) {
+    const req = httpMocks.createRequest({...rOpts, url});
     const res = httpMocks.createResponse({req});
     return [req, res];
   }
@@ -34,7 +34,7 @@ test('serve', async() => {
   let code = await serve(opts, state, ...reqRes('////'));
   assert.equal(code, 500);
 
-  code = await serve(opts, state, ...reqRes('/', 'POST'));
+  code = await serve(opts, state, ...reqRes('/', {method: 'POST'}));
   assert.equal(code, 405);
 
   code = await serve(opts, state, ...reqRes('/'));
@@ -50,7 +50,17 @@ test('serve', async() => {
   code = await serve(opts, state, ...reqRes('/unknown'));
   assert.equal(code, 403);
 
-  code = await serve(opts, state, ...reqRes('/favicon.ico'));
+  const [req, res] = reqRes('/favicon.ico');
+  code = await serve(opts, state, req, res);
   assert.equal(code, 200);
+  const etag = res.getHeader('etag');
+
+  const [reqE, resE] = reqRes('/favicon.ico', {
+    headers: {
+      'if-none-match': etag,
+    },
+  });
+  code = await serve(opts, state, reqE, resE);
+  assert.equal(code, 304);
 });
 

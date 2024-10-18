@@ -102,8 +102,12 @@ export async function serve(
       pathname,
       size: stat.size,
     };
-    info.stream = ofs.createReadStream(file);
     state.watcher.add(file);
+    const etag = `${stat.mtime.getTime().toString(16)}-${stat.size.toString(16)}`;
+    if (req.headers['if-none-match'] === etag) {
+      return error(304, 'Not Modified');
+    }
+    info.stream = ofs.createReadStream(file);
 
     let mime = mt.lookup(info.file) || 'text/plain';
     if ((mime === 'text/markdown') && !opts.rawMarkdown) {
@@ -117,6 +121,7 @@ export async function serve(
     const headers: OutgoingHttpHeaders = {
       ...state.headers,
       'Content-Type': mime,
+      etag,
     };
     if (info.size) {
       headers['Content-Length'] = info.size; // Otherwise chunked
