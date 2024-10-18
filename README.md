@@ -53,8 +53,8 @@ Options:
   --notAfterDays <number>     How many days is the certificate valid? (default:
                               7)
   -o, --open <path>           Open this path in the default browser.  Relative
-                              to server root.  If empty, do not open anything.
-                              (default: "/")
+                              to server root and prefix, if specified.  If
+                              empty (""), do not open anything. (default: ".")
   -p, --port <number>         Port to serve content from.  Use 0 to get an
                               unused port. (default: 8111)
   -P, --prefix <string>       Make all of the URLs served have paths that start
@@ -63,7 +63,6 @@ Options:
   --rawMarkdown               Do not process markdown into HTML
   -t, --timeout <number>      Time, in ms, to allow exec to run.
   -V, --version               output the version number
-
 ```
 
 ## Config files

@@ -101,8 +101,8 @@ export async function hostLocal(
     log(opts, 'Listening on', state.baseURL.toString());
     if (opts.open) {
       // Ignore promise
-      open(new URL(opts.open, state.baseURL).toString())
-        .catch((er: unknown) => console.error(er));
+      const u = new URL(opts.open, state.baseURL).toString();
+      open(u).catch((er: unknown) => console.error(er));
     }
     if (opts.onListen) {
       opts.onListen.call(server, state.baseURL);
