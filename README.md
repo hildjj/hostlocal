@@ -7,6 +7,14 @@ certificates.
 This server is quite opinionated about its defaults to make setup as easy
 as possible... if you have a problem shaped like mine.
 
+NOTE:
+
+This server is NOT intended for production use, or any other place where the
+clients are not fully-trusted.  Simplifying assumptions have been made to
+optimize code size, performance, and usability that make its use in a
+production context inappropriate.  Security issues that are filed that do
+not take this note into account will not be prioritized.
+
 ## Run
 
 ```sh
@@ -20,7 +28,7 @@ npx hostlocal docs
 Usage: hostlocal [options] [directory]
 
 Arguments:
-  directory                   Directory to serve. (default: cwd
+  directory                   Directory to serve. (default: cwd)
 
 Options:
   -6, --ipv6                  Listen on IPv6 only, if host supports both IPv4
@@ -38,7 +46,7 @@ Options:
                               execute the command in the --exec option.  Can be
                               specified multiple times.
   -h, --help                  display help for command
-  --host <address>            Hostname or IP address to listen on. "::" for
+  -H, --host <address>        Hostname or IP address to listen on. "::" for
                               everything. (default: "localhost")
   -i, --initial               If glob is specified, run the exec command on
                               startup, before listening
@@ -49,10 +57,13 @@ Options:
                               (default: "/")
   -p, --port <number>         Port to serve content from.  Use 0 to get an
                               unused port. (default: 8111)
+  -P, --prefix <string>       Make all of the URLs served have paths that start
+                              with this prefix, followed by a slash.
   -q, --quiet                 Do not do logging
   --rawMarkdown               Do not process markdown into HTML
   -t, --timeout <number>      Time, in ms, to allow exec to run.
   -V, --version               output the version number
+
 ```
 
 ## Config files
@@ -73,6 +84,7 @@ export default {
   notAfterDays: 7,
   open: '/',
   port: 8111,
+  prefix: '',
   quiet: false,
   rawMarkdown: false,
   timeout: null,

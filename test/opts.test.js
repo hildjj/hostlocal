@@ -16,3 +16,17 @@ test('single glob', async() => {
   });
   assert.deepEqual(opts.glob, ['foo']);
 });
+
+test('prefix', async() => {
+  let opts = await normalizeOptions({});
+  assert.deepEqual(opts.prefix, '');
+
+  opts = await normalizeOptions({prefix: null});
+  assert.deepEqual(opts.prefix, '');
+
+  opts = await normalizeOptions({prefix: 'foo'});
+  assert.deepEqual(opts.prefix, '/foo');
+
+  opts = await normalizeOptions({prefix: './foo/bar/'});
+  assert.deepEqual(opts.prefix, '/foo/bar');
+});

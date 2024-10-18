@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 import type {AddressInfo, ListenOptions} from 'node:net';
-import {type HostOptions, normalizeOptions} from './opts.js';
+import {type HostOptions, type RequiredHostOptions, normalizeOptions} from './opts.js';
 import {type ServerState, serve} from './serve.js';
 import {name as pkgName, version as pkgVersion} from './version.js';
 import {DebounceSet} from './debounce.js';
@@ -36,6 +36,11 @@ function notify(wss: WebSocketServer, urls: string[]): void {
   }
 }
 
+function getBase(opts: RequiredHostOptions): URL {
+  const urlHost = opts.host.includes(':') ? `[${opts.host}]` : opts.host;
+  return new URL(`https://${urlHost}:${opts.port}${opts.prefix}/`);
+}
+
 /**
  * Server a directory via HTTPS.
  *
@@ -58,18 +63,21 @@ export async function hostLocal(
     await wg.start();
   }
 
-  const urlHost = opts.host.includes(':') ? `[${opts.host}]` : opts.host;
   const state: ServerState = {
     headers: {
       Server: `${pkgName}/${pkgVersion}`,
     },
     base: await fs.realpath(opts.dir),
-    baseURL: new URL(`https://${urlHost}:${opts.port}/`),
+    baseURL: getBase(opts),
     watcher: chokidar.watch([], {
       atomic: true,
       ignoreInitial: true,
     }),
   };
+
+  if (opts.prefix) {
+    state.baseRegExp = new RegExp(`^${opts.prefix}`);
+  }
 
   const listenOpts: ListenOptions = {
     port: opts.port,
@@ -87,8 +95,8 @@ export async function hostLocal(
     log(opts, req.method, String(code), req.url);
   }).listen(listenOpts, () => {
     // If port was 0, we now need to recalc baseURL
-    const {port} = server.address() as AddressInfo;
-    state.baseURL = new URL(`https://${urlHost}:${port}/`);
+    opts.port = (server.address() as AddressInfo).port;
+    state.baseURL = getBase(opts);
 
     log(opts, 'Listening on', state.baseURL.toString());
     if (opts.open) {

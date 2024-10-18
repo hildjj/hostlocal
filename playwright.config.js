@@ -3,7 +3,8 @@ import {defineConfig, devices} from '@playwright/test';
 import config from './.hostlocal.js';
 
 const {port} = config;
-const baseURL = `https://localhost:${port}/`;
+const prefix = '/prefix';
+const baseURL = `https://localhost:${port}${prefix}/`;
 const isCI = Boolean(process.env.CI);
 
 /**
@@ -66,11 +67,11 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: `node bin/hostlocal.js --host ::1 -g README.md --shutTimes ${projects.length} -o ""`,
+    command: `node bin/hostlocal.js --host ::1 -P ${prefix} -g README.md --shutTimes ${projects.length} -o ""`,
     url: baseURL,
     reuseExistingServer: !isCI,
     ignoreHTTPSErrors: true,
-    timeout: 3000,
+    timeout: 30000,
     stdout: 'pipe',
     stderr: 'pipe',
   },
