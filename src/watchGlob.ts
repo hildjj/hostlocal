@@ -1,4 +1,4 @@
-import {type FSWatcher, default as chokidar} from 'chokidar';
+import {ChokidarOptions, type FSWatcher, default as chokidar} from 'chokidar';
 import {EventEmitter} from 'node:events';
 import {debounce} from './debounce.js';
 import fs from 'node:fs/promises';
@@ -46,14 +46,22 @@ export interface WatchOptions {
   timeout?: number | null;
 }
 
-export const watchTiming = {
+export const watchTiming: ChokidarOptions = {
   awaitWriteFinish: {
     stabilityThreshold: 300,
     pollInterval: 100,
   },
 };
 
-export class WatchGlob extends EventEmitter {
+interface WatchGlobEvents {
+  start: [];
+  change: [file: string];
+  error: [error: unknown];
+  close: [];
+  exec: [code: number | null, signal: NodeJS.Signals | null];
+}
+
+export class WatchGlob extends EventEmitter<WatchGlobEvents> {
   #glob: string | string[];
   #cmd: string;
   #cwd: string;
@@ -143,6 +151,7 @@ export class WatchGlob extends EventEmitter {
       });
       child.on('error', reject);
       child.on('close', (code, signal) => {
+        this.emit('exec', code, signal);
         if (signal) {
           reject(new Error(`exited ${this.#cmd} due to signal ${signal}`));
         } else if (code) {
@@ -151,9 +160,7 @@ export class WatchGlob extends EventEmitter {
           resolve();
         }
       });
-    }).then(() => {
-      this.emit('exec');
-    }, (er: unknown) => {
+    }).catch((er: unknown) => {
       this.emit('error', er);
     });
   }

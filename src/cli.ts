@@ -68,6 +68,8 @@ export async function cli(
     .configureHelp({
       sortOptions: true,
     })
-    .action((directory, opts) => hostLocal(directory, opts))
+    .action((directory, opts) => hostLocal(
+      directory, opts
+    ).then(s => s.start()))
     .parseAsync(args);
 }

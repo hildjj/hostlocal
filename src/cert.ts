@@ -40,8 +40,9 @@ export async function createCert(
     ...options,
   };
 
-  const now = new Date(new Date().getTime() - 10000);
+  const now = new Date(new Date().getTime());
   now.setMilliseconds(0);
+  const recently = new Date(now.getTime() - 10000); // 10s ago.
   const plusHour = new Date(now.getTime() + HOUR_ms);
   const nextWeek = new Date(now.getTime() + (opts.notAfterDays * DAY_ms));
 
@@ -74,7 +75,7 @@ export async function createCert(
     version: 3,
     serial: {int: 4},
     issuer: {str: '/CN=UserCA'},
-    notbefore: rs.datetozulu(now, true, false),
+    notbefore: rs.datetozulu(recently, true, false),
     notafter: rs.datetozulu(nextWeek, true, false),
     subject: {str: `/CN=${username}`},
     sbjpubkey: pub,

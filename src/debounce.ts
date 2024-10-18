@@ -27,6 +27,10 @@ export function debounce<T extends AnyFunction>(
 }
 
 export type SetFunction<T> = (all: T[]) => void;
+export interface DebounceOptions {
+  wait: number;
+  signal?: AbortSignal;
+}
 
 /**
  * Collect a set of things until they stop coming in for a while.
@@ -34,24 +38,15 @@ export type SetFunction<T> = (all: T[]) => void;
  */
 export class DebounceSet<T = string> {
   #fn: SetFunction<T>;
+  #opts: DebounceOptions;
   #contents = new Set<T>();
-  #wait: number;
   #timeout: NodeJS.Timeout | undefined = undefined;
-  #signal: AbortSignal | undefined = undefined;
 
-  public constructor(
-    fn: SetFunction<T>,
-    wait: number,
-    signal?: AbortSignal | null
-  ) {
+  public constructor(fn: SetFunction<T>, opts: DebounceOptions) {
     this.#fn = fn;
-    this.#wait = wait;
-    this.#signal = signal ?? undefined;
-    this.#signal?.addEventListener('abort', () => {
-      if (this.#timeout) {
-        clearTimeout(this.#timeout);
-      }
-      this.#notify();
+    this.#opts = opts;
+    this.#opts.signal?.addEventListener('abort', () => {
+      this.close();
     });
   }
 
@@ -65,11 +60,21 @@ export class DebounceSet<T = string> {
       clearTimeout(this.#timeout);
     }
     this.#contents.add(item);
-    this.#timeout = setTimeout(() => this.#notify(), this.#wait);
+    this.#timeout = setTimeout(() => this.#notify(), this.#opts.wait);
+  }
+
+  public close(): void {
+    if (this.#timeout) {
+      clearTimeout(this.#timeout);
+      this.#timeout = undefined;
+    }
+    this.#notify();
   }
 
   #notify(): void {
-    this.#fn([...this.#contents]);
-    this.#contents.clear();
+    if (this.#contents.size > 0) {
+      this.#fn([...this.#contents]);
+      this.#contents.clear();
+    }
   }
 }
