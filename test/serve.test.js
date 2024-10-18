@@ -45,5 +45,12 @@ test('serve', async() => {
 
   code = await serve(opts, state, ...reqRes('/test/fixtures/foo.unknown-type'));
   assert.equal(code, 200);
+
+  state.baseURL.pathname += '/foo';
+  code = await serve(opts, state, ...reqRes('/unknown'));
+  assert.equal(code, 403);
+
+  code = await serve(opts, state, ...reqRes('/favicon.ico'));
+  assert.equal(code, 200);
 });
 

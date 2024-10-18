@@ -36,6 +36,7 @@
     "clean": "rimraf coverage docs lib playwright-report test-results",
     "dev": "node bin/hostlocal.js -c .hostCoverage.js",
     "lint": "eslint .",
+    "snaps": "UPDATE_SNAPSHOT=1 node --test test/cli.test.js",
     "spotcheck": "node --test test/*.test.js",
     "precoverage": "tsc --inlineSourceMap",
     "coverage": "npm run spotcheck && playwright test",

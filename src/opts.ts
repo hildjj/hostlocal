@@ -1,5 +1,6 @@
 import {type CertOptions, DEFAULT_CERT_OPTIONS} from './cert.js';
 import path from 'node:path';
+import {pathToFileURL} from 'node:url';
 
 export type ListenCallback = (url: URL) => void;
 export type EmptyCallback = () => void;
@@ -49,6 +50,12 @@ export interface HostOptions extends CertOptions {
   /** TCP Port to listen on. */
   port?: number;
 
+  /**
+   * Make all of the URLs served have paths that start with this prefix,
+   * followed by a slash.
+   */
+  prefix?: string;
+
   /** No logging if true. */
   quiet?: boolean;
 
@@ -81,6 +88,7 @@ export const DEFAULT_HOST_OPTIONS: RequiredHostOptions = {
   onListen: null,
   open: '/',
   port: 8111,
+  prefix: '',
   quiet: false,
   rawMarkdown: false,
   shutTimes: Infinity,
@@ -101,10 +109,10 @@ export async function normalizeOptions(
   let config = {};
   if (!Object.hasOwn(options, 'config') || options.config) {
     try {
-      const fullConfig = path.resolve(
+      const fullConfig = pathToFileURL(path.resolve(
         process.cwd(),
         options.config || (DEFAULT_HOST_OPTIONS.config as string)
-      );
+      )).toString();
       const c = await import(fullConfig);
       config = c.default;
     } catch (e) {
@@ -124,6 +132,14 @@ export async function normalizeOptions(
   // Backward-compatibility
   if (typeof rest.glob === 'string') {
     rest.glob = [rest.glob];
+  }
+
+  if (rest.prefix) {
+    // Ensure rest.prefix starts with / and does not end with /
+    // eslint-disable-next-line prefer-template
+    rest.prefix = '/' + rest.prefix.trim().replaceAll(/^[/.]+|\/+$/g, '');
+  } else {
+    rest.prefix = '';
   }
   return rest;
 }

@@ -49,11 +49,12 @@ export async function cli(
     .option('--certDir <directory>', `Directory, relative to cwd, to cache cert info. (default: "${DEFAULT_HOST_OPTIONS.certDir}")`)
     .option('-g, --glob <pattern>', 'Set of files to watch.  If one of these changes, execute the command in the --exec option.  Can be specified multiple times.', appendArray)
     .option('-e, --exec <shell command>', `Execute this command when the glob changes. (default: "${DEFAULT_HOST_OPTIONS.exec}")`)
-    .option('--host <address>', 'Hostname or IP address to listen on. "::" for everything. (default: "localhost")')
+    .option('-H, --host <address>', 'Hostname or IP address to listen on. "::" for everything. (default: "localhost")')
     .option('-i, --initial', 'If glob is specified, run the exec command on startup, before listening')
     .option('--notAfterDays <number>', `How many days is the certificate valid? (default: ${DEFAULT_HOST_OPTIONS.notAfterDays})`, toInt)
     .option('-o, --open <path>', `Open this path in the default browser.  Relative to server root.  If empty, do not open anything. (default: "${DEFAULT_HOST_OPTIONS.open}")`)
     .option('-p, --port <number>', `Port to serve content from.  Use 0 to get an unused port. (default: ${DEFAULT_HOST_OPTIONS.port})`, toInt)
+    .option('-P, --prefix <string>', 'Make all of the URLs served have paths that start with this prefix, followed by a slash.')
     .option('-q, --quiet', 'Do not do logging')
     .option('--rawMarkdown', 'Do not process markdown into HTML')
     .option('-t, --timeout <number>', 'Time, in ms, to allow exec to run.', toInt)
@@ -63,7 +64,7 @@ export async function cli(
         .argParser(toInt)
         .hideHelp()
     )
-    .argument('[directory]', 'Directory to serve. (default: cwd')
+    .argument('[directory]', 'Directory to serve. (default: cwd)')
     .configureHelp({
       sortOptions: true,
     })
