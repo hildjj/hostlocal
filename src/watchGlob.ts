@@ -58,7 +58,7 @@ interface WatchGlobEvents {
   change: [file: string];
   error: [error: unknown];
   close: [];
-  exec: [code: number | null, signal: NodeJS.Signals | null];
+  exec: [];
 }
 
 export class WatchGlob extends EventEmitter<WatchGlobEvents> {
@@ -151,7 +151,6 @@ export class WatchGlob extends EventEmitter<WatchGlobEvents> {
       });
       child.on('error', reject);
       child.on('close', (code, signal) => {
-        this.emit('exec', code, signal);
         if (signal) {
           reject(new Error(`exited ${this.#cmd} due to signal ${signal}`));
         } else if (code) {
@@ -160,7 +159,9 @@ export class WatchGlob extends EventEmitter<WatchGlobEvents> {
           resolve();
         }
       });
-    }).catch((er: unknown) => {
+    }).then(() => {
+      this.emit('exec');
+    }, (er: unknown) => {
       this.emit('error', er);
     });
   }
