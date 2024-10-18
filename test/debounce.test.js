@@ -39,9 +39,25 @@ test('debounceSet', () => new Promise((resolve, reject) => {
 test('debounceSet signal', () => {
   const called = [];
   const ac = new AbortController();
-  const s = new DebounceSet(all => called.push(all), 100000, ac.signal);
+  const s = new DebounceSet(all => called.push(all), {
+    wait: 100000,
+    signal: ac.signal,
+  });
   s.add('one');
   s.add('two');
   ac.abort('test');
   assert.deepEqual(called, [['one', 'two']]);
+});
+
+test('debounceSet signal nonePending', () => {
+  const called = [];
+  const ac = new AbortController();
+  const s = new DebounceSet(all => called.push(all), {
+    wait: 100000,
+    signal: ac.signal,
+  });
+  ac.abort('test');
+  assert.deepEqual(called, []);
+  s.close();
+  assert.deepEqual(called, []);
 });

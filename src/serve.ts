@@ -1,7 +1,7 @@
 import {AddClient, type FileInfo, MarkdownToHtml} from './html.js';
 import type {Http2ServerRequest, Http2ServerResponse, OutgoingHttpHeaders} from 'node:http2';
-import type {FSWatcher} from 'chokidar';
 import type {RequiredHostOptions} from './opts.js';
+import type {WatchSet} from './watchSet.js';
 import {fileURLToPath} from 'node:url';
 import fs from 'node:fs/promises';
 import mt from 'mime-types';
@@ -11,8 +11,7 @@ import path from 'node:path';
 export interface ServerState {
   base: string;
   baseURL: URL;
-  baseRegExp?: RegExp;
-  watcher: FSWatcher;
+  watcher: WatchSet;
   headers: OutgoingHttpHeaders;
 }
 

@@ -1,9 +1,7 @@
 import {type CertOptions, DEFAULT_CERT_OPTIONS} from './cert.js';
+import fs from 'node:fs/promises';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
-
-export type ListenCallback = (url: URL) => void;
-export type EmptyCallback = () => void;
 
 export interface HostOptions extends CertOptions {
 
@@ -33,16 +31,6 @@ export interface HostOptions extends CertOptions {
 
   /** Listen on IPv6 only, if host supports both IPv4 and IPv6. */
   ipv6?: boolean;
-
-  /**
-   * Fired when server is listening.  Only useful for testing.
-   */
-  onListen?: ListenCallback | null;
-
-  /**
-   * Fired when the server has shut down.  Only useful for testing.
-   */
-  onClose?: EmptyCallback | null;
 
   /** Path to open. */
   open?: string;
@@ -84,8 +72,6 @@ export const DEFAULT_HOST_OPTIONS: RequiredHostOptions = {
   index: ['index.html', 'index.htm', 'README.md'],
   initial: false,
   ipv6: false,
-  onClose: null,
-  onListen: null,
   open: '.',
   port: 8111,
   prefix: '',
@@ -101,13 +87,15 @@ export const DEFAULT_HOST_OPTIONS: RequiredHostOptions = {
  * with all fields required, collapsing types as necessary.
  *
  * @param options Options passed in from CLI, for instance.
+ * @param root Root directory to override options.dir.
  * @returns Normalized options.
  */
 export async function normalizeOptions(
-  options: HostOptions
+  options: HostOptions,
+  root?: string | null
 ): Promise<RequiredHostOptions> {
   let config: HostOptions = Object.create(null);
-  if (!Object.hasOwn(options, 'config') || options.config) {
+  if (!Object.prototype.hasOwnProperty.call(options, 'config') || options.config) {
     try {
       const fullConfig = pathToFileURL(path.resolve(
         process.cwd(),
@@ -141,5 +129,11 @@ export async function normalizeOptions(
   } else {
     rest.prefix = '';
   }
+
+  if (root) {
+    rest.dir = root;
+  }
+  rest.dir = await fs.realpath(rest.dir);
+
   return rest;
 }

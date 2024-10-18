@@ -99,7 +99,9 @@ Example:
 ```js
 import {hostLocal} from 'hostlocal';
 
-await hostLocal({port: 8111});
+const server = await hostLocal({port: 8111});
+server.on('listen', baseURL => console.log(baseURL.toString()));
+await server.start();
 ```
 
 ---

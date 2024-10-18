@@ -1,4 +1,4 @@
-import {type FSWatcher, default as chokidar} from 'chokidar';
+import {ChokidarOptions, type FSWatcher, default as chokidar} from 'chokidar';
 import {EventEmitter} from 'node:events';
 import {debounce} from './debounce.js';
 import fs from 'node:fs/promises';
@@ -46,14 +46,22 @@ export interface WatchOptions {
   timeout?: number | null;
 }
 
-export const watchTiming = {
+export const watchTiming: ChokidarOptions = {
   awaitWriteFinish: {
     stabilityThreshold: 300,
     pollInterval: 100,
   },
 };
 
-export class WatchGlob extends EventEmitter {
+interface WatchGlobEvents {
+  start: [];
+  change: [file: string];
+  error: [error: unknown];
+  close: [];
+  exec: [];
+}
+
+export class WatchGlob extends EventEmitter<WatchGlobEvents> {
   #glob: string | string[];
   #cmd: string;
   #cwd: string;
