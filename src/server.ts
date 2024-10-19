@@ -1,6 +1,7 @@
 import {type ServerState, staticFile} from './staticFile.js';
 import {name as pkgName, version as pkgVersion} from './version.js';
 import type {AddressInfo} from 'node:net';
+import type {Duplex} from 'node:stream';
 import {EventEmitter} from 'node:events';
 import type {KeyCert} from './cert.js';
 import type {RequiredHostOptions} from './opts.js';
@@ -24,6 +25,7 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
   #opts: RequiredHostOptions;
   #wg: WatchGlob | undefined;
   #server: http2.Http2SecureServer | undefined = undefined;
+  #socks = new Set<Duplex>();
   #state: ServerState;
   #wss: WebSocketServer | undefined = undefined;
 
@@ -88,7 +90,20 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
     }, async(req, res) => {
       const code = await staticFile(this.#opts, this.#state, req, res);
       this.log(req.method, String(code), req.url);
-    }).listen({
+    });
+
+    // HTTP2 doesn't have closeAllConnections
+    this.#server.on('connection', (s: Duplex) => {
+      this.#socks.add(s);
+      s.once('close', () => this.#socks.delete(s));
+    });
+    this.#ac.signal.addEventListener('abort', () => {
+      for (const s of this.#socks) {
+        s.destroy(); // Fires close event above, which cleans up.
+      }
+    });
+
+    this.#server.listen({
       port: this.#opts.port,
       host: this.#opts.host,
       ipv6Only: this.#opts.ipv6,

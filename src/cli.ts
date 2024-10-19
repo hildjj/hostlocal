@@ -30,10 +30,12 @@ function toInt(val: string): number {
  * @param args Arguments to process, in node format.  If not specified, uses
  *   process.argv.
  * @param out Override stdout and stderr for testing.
+ * @param signal Abort this signal to shut down the server.
  */
 export async function cli(
   args?: string[],
-  out?: OutputConfiguration
+  out?: OutputConfiguration,
+  signal?: AbortSignal
 ): Promise<void> {
   const program = new Command();
   if (out) {
@@ -68,8 +70,9 @@ export async function cli(
     .configureHelp({
       sortOptions: true,
     })
-    .action((directory, opts) => hostLocal(
-      directory, opts
-    ).then(s => s.start()))
+    .action((directory, opts) => {
+      opts.signal = signal;
+      return hostLocal(directory, opts).then(s => s.start());
+    })
     .parseAsync(args);
 }
