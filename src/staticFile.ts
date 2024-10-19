@@ -27,6 +27,7 @@ export const {
   HTTP_STATUS_NOT_FOUND: NOT_FOUND,
   HTTP_STATUS_NOT_MODIFIED: NOT_MODIFIED,
   HTTP_STATUS_OK: OK,
+  HTTP_STATUS_NO_CONTENT: NO_CONTENT,
 } = http2.constants;
 
 async function findExistingFile(
@@ -79,8 +80,15 @@ export async function staticFile(
   }
 
   try {
-    if (req.method !== 'GET') {
-      return error(METHOD_NOT_ALLOWED, `Method ${req.method} not supported`);
+    switch (req.method) {
+      case 'GET':
+        break;
+      case 'OPTIONS':
+        return error(NO_CONTENT, '', {allow: 'GET, HEAD, OPTIONS'});
+      case 'HEAD':
+        break;
+      default:
+        return error(METHOD_NOT_ALLOWED, `Method ${req.method} not supported`);
     }
 
     const url = new URL(req.url, state.baseURL);
@@ -119,6 +127,7 @@ export async function staticFile(
     // e.g. reconnect
     state.watcher.add(file);
 
+    let mime = mt.lookup(file) || 'text/plain';
     // Same alg as nginx.  MUST have dquotes.
     const etag = `"${stat.mtime.getTime().toString(16)}-${stat.size.toString(16)}"`;
     const inm = req.headers['if-none-match'];
@@ -129,6 +138,19 @@ export async function staticFile(
       return error(NOT_MODIFIED, 'Not Modified', {etag});
     }
 
+    const headers: http2.OutgoingHttpHeaders = {
+      ...state.headers,
+      'content-type': mime,
+      'date': new Date(stat.mtime).toUTCString(),
+      etag,
+    };
+
+    if (req.method === 'HEAD') {
+      // No content-length, because we don't want to open the file yet.
+      // https://httpwg.org/specs/rfc9110.html#HEAD says that's ok.
+      return error(OK, '', headers);
+    }
+
     const info: FileInfo = {
       file,
       pathname,
@@ -136,21 +158,15 @@ export async function staticFile(
       stream: fh.createReadStream(),
     };
 
-    let mime = mt.lookup(info.file) || 'text/plain';
     if ((mime === 'text/markdown') && !opts.rawMarkdown) {
       info.stream = info.stream.pipe(new MarkdownToHtml(info));
       mime = 'text/html';
+      headers['content-type'] = mime;
     }
     if (mime === 'text/html') {
       info.stream = info.stream.pipe(new AddClient(info));
     }
 
-    const headers: http2.OutgoingHttpHeaders = {
-      ...state.headers,
-      'content-type': mime,
-      'date': new Date(stat.mtime).toUTCString(),
-      etag,
-    };
     if (info.size) {
       headers['content-length'] = info.size; // Otherwise chunked
     }
