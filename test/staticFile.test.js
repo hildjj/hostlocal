@@ -63,5 +63,17 @@ test('staticFile', async() => {
   });
   code = await staticFile(opts, state, reqE, resE);
   assert.equal(code, 304);
+
+  const [reqO, resO] = reqRes('/', {
+    method: 'OPTIONS',
+  });
+  code = await staticFile(opts, state, reqO, resO);
+  assert.equal(code, 204);
+
+  const [reqH, resH] = reqRes('/favicon.ico', {
+    method: 'HEAD',
+  });
+  code = await staticFile(opts, state, reqH, resH);
+  assert.equal(code, 200);
 });
 

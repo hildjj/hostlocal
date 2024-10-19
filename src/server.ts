@@ -12,7 +12,7 @@ import http2 from 'node:http2';
 import open from 'open';
 import path from 'node:path';
 
-interface ServerEvents {
+export interface ServerEvents {
   close: [];
   listen: [url: URL];
   wsmessage: [json: any];
