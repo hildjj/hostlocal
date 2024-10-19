@@ -96,7 +96,6 @@ export async function staticFile(
     let stat = await fh.stat();
     if (stat.isDirectory()) {
       await fh.close();
-      // eslint-disable-next-line require-atomic-updates
       [file, fh, stat] = await findExistingFile(file, opts.index);
     }
 
