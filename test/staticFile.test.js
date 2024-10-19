@@ -4,13 +4,14 @@ import chokidar from 'chokidar';
 import fs from 'node:fs/promises';
 import httpMocks from 'node-mocks-http';
 import {normalizeOptions} from '../lib/opts.js';
-import {serve} from '../lib/serve.js';
+import {staticFile} from '../lib/staticFile.js';
 import test from 'node:test';
 
-test('serve', async() => {
+test('staticFile', async() => {
   const opts = await normalizeOptions({
     config: 'DOES_NOT_EXIST',
     rawMarkdown: true,
+    index: ['__DOES_NOT_EXIST__', 'src', 'index.html', 'index.htm', 'README.md'],
   });
   const state = {
     headers: {
@@ -31,27 +32,27 @@ test('serve', async() => {
     return [req, res];
   }
 
-  let code = await serve(opts, state, ...reqRes('////'));
+  let code = await staticFile(opts, state, ...reqRes('////'));
   assert.equal(code, 500);
 
-  code = await serve(opts, state, ...reqRes('/', {method: 'POST'}));
+  code = await staticFile(opts, state, ...reqRes('/', {method: 'POST'}));
   assert.equal(code, 405);
 
-  code = await serve(opts, state, ...reqRes('/'));
+  code = await staticFile(opts, state, ...reqRes('/'));
   assert.equal(code, 200);
 
-  code = await serve(opts, state, ...reqRes('/package.json'));
+  code = await staticFile(opts, state, ...reqRes('/package.json'));
   assert.equal(code, 200);
 
-  code = await serve(opts, state, ...reqRes('/test/fixtures/foo.unknown-type'));
+  code = await staticFile(opts, state, ...reqRes('/test/fixtures/foo.unknown-type'));
   assert.equal(code, 200);
 
   state.baseURL.pathname += '/foo';
-  code = await serve(opts, state, ...reqRes('/unknown'));
+  code = await staticFile(opts, state, ...reqRes('/unknown'));
   assert.equal(code, 403);
 
   const [req, res] = reqRes('/favicon.ico');
-  code = await serve(opts, state, req, res);
+  code = await staticFile(opts, state, req, res);
   assert.equal(code, 200);
   const etag = res.getHeader('etag');
 
@@ -60,7 +61,7 @@ test('serve', async() => {
       'if-none-match': etag,
     },
   });
-  code = await serve(opts, state, reqE, resE);
+  code = await staticFile(opts, state, reqE, resE);
   assert.equal(code, 304);
 });
 
