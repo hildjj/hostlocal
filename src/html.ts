@@ -21,7 +21,7 @@ export interface FileInfo {
    * Read the file from a stream.  May be replaced multiple times with
    * transforms.
    */
-  stream?: Readable;
+  stream: Readable;
 }
 
 const md = markdownit({
@@ -77,17 +77,6 @@ export class MarkdownToHtml extends Transform {
   static #encodedStringChunks: Buffer[] = [];
   #bufs: Buffer[] = [];
   #info: FileInfo;
-
-  static {
-    // Pre-cache all of the buffer versions of the strings, and figure
-    // out the number of bytes this is going to add.
-    const t = new MarkdownToHtml({
-      file: '',
-      pathname: '',
-      size: 0,
-    });
-    Readable.from([]).pipe(t);
-  }
 
   public constructor(info: FileInfo) {
     super();

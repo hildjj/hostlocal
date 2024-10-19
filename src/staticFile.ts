@@ -1,11 +1,11 @@
 import {AddClient, type FileInfo, MarkdownToHtml} from './html.js';
 import type {Http2ServerRequest, Http2ServerResponse, OutgoingHttpHeaders} from 'node:http2';
 import type {RequiredHostOptions} from './opts.js';
+import type {Stats} from 'node:fs';
 import type {WatchSet} from './watchSet.js';
 import {fileURLToPath} from 'node:url';
 import fs from 'node:fs/promises';
 import mt from 'mime-types';
-import ofs from 'node:fs';
 import path from 'node:path';
 
 export interface ServerState {
@@ -23,14 +23,16 @@ const F_FAVICON = fileURLToPath(new URL(FAVICON, assets));
 async function findExistingFile(
   dir: string,
   possible: string[]
-): Promise<[string, ofs.Stats]> {
+): Promise<[string, fs.FileHandle, Stats]> {
   for (const p of possible) {
     try {
       const file = path.join(dir, p);
-      const stat = await fs.stat(file);
+      const fh = await fs.open(file);
+      const stat = await fh.stat();
       if (stat.isFile()) {
-        return [file, stat];
+        return [file, fh, stat];
       }
+      fh.close();
     } catch (_ignored) {
       // Ignored
     }
@@ -49,7 +51,7 @@ async function findExistingFile(
  * @param res Response.
  * @returns Status code sent, for logging.
  */
-export async function serve(
+export async function staticFile(
   opts: RequiredHostOptions,
   state: ServerState,
   req: Http2ServerRequest,
@@ -60,7 +62,6 @@ export async function serve(
     return code;
   }
 
-  let info: FileInfo | undefined = undefined;
   try {
     if (req.method !== 'GET') {
       return error(405, `Method ${req.method} not supported`);
@@ -71,17 +72,17 @@ export async function serve(
 
     const relative = path.relative(state.baseURL.pathname, pathname);
     let file = path.resolve(path.join(state.base, relative));
-    let stat: ofs.Stats | undefined = undefined;
+    let fh: fs.FileHandle | undefined = undefined;
 
     if (req.url === S_FAVICON) {
       try {
         // If there is one in the base dir, use it.
         file = path.join(state.base, FAVICON);
-        stat = await fs.stat(file);
+        fh = await fs.open(file);
       } catch (_ignored) {
         // Otherwise fall back on the one in assets.
         file = F_FAVICON;
-        stat = await fs.stat(file);
+        fh = await fs.open(file);
       }
     } else if (relative.startsWith('..')) {
       // Paths can be bad from the client, or bad because of symlinks.
@@ -89,24 +90,33 @@ export async function serve(
       // they point outside the root directory.
       return error(403, 'Invalid path');
     } else {
-      stat = await fs.stat(file);
+      fh = await fs.open(file);
     }
 
+    let stat = await fh.stat();
     if (stat.isDirectory()) {
-      [file, stat] = await findExistingFile(file, opts.index);
+      await fh.close();
+      // eslint-disable-next-line require-atomic-updates
+      [file, fh, stat] = await findExistingFile(file, opts.index);
     }
 
-    info = {
+    // Even if we 304, some client is waiting for updates on this file.
+    // e.g. reconnect
+    state.watcher.add(file);
+
+    // Same alg as nginx
+    const etag = `${stat.mtime.getTime().toString(16)}-${stat.size.toString(16)}`;
+    if (req.headers['if-none-match'] === etag) {
+      fh.close();
+      return error(304, 'Not Modified');
+    }
+
+    const info: FileInfo = {
       file,
       pathname,
       size: stat.size,
+      stream: fh.createReadStream(),
     };
-    state.watcher.add(file);
-    const etag = `${stat.mtime.getTime().toString(16)}-${stat.size.toString(16)}`;
-    if (req.headers['if-none-match'] === etag) {
-      return error(304, 'Not Modified');
-    }
-    info.stream = ofs.createReadStream(file);
 
     let mime = mt.lookup(info.file) || 'text/plain';
     if ((mime === 'text/markdown') && !opts.rawMarkdown) {

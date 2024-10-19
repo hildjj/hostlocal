@@ -1,4 +1,4 @@
-import {type ServerState, serve} from './serve.js';
+import {type ServerState, staticFile} from './staticFile.js';
 import {name as pkgName, version as pkgVersion} from './version.js';
 import type {AddressInfo} from 'node:net';
 import {EventEmitter} from 'node:events';
@@ -86,7 +86,7 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
       ...this.#cert,
       allowHTTP1: true, // Needed to make ws work
     }, async(req, res) => {
-      const code = await serve(this.#opts, this.#state, req, res);
+      const code = await staticFile(this.#opts, this.#state, req, res);
       this.log(req.method, String(code), req.url);
     }).listen({
       port: this.#opts.port,
