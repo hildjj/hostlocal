@@ -16,8 +16,14 @@ test('createCert', async() => {
 
   const opts = {
     certDir: tmp,
+    log() {
+      // Ignored.
+    },
+    notAfterDays: 3,
   };
-  const {key, cert, notAfter} = await createCert(opts);
+
+  const kc = await createCert(opts);
+  const {key, cert, notAfter} = kc;
   assert(key);
   assert(cert);
   assert(notAfter);
@@ -27,8 +33,18 @@ test('createCert', async() => {
   assert.equal(cert, cached.cert);
   assert.deepEqual(notAfter, cached.notAfter);
 
-  await fs.writeFile(path.join(tmp, 'cert.pem'), 'MANGLED CERT', 'utf8');
+  await fs.writeFile(path.join(tmp, 'localhost.cert.pem'), 'MANGLED CERT', 'utf8');
   await assert.rejects(() => createCert(opts));
-  await fs.writeFile(path.join(tmp, 'key.pem'), 'MANGLED KEY', 'utf8');
-  await assert.rejects(() => createCert(opts));
+
+  // Doesn't exist, create new
+  await fs.rm(path.join(tmp, 'localhost.cert.pem'));
+  await assert.doesNotReject(() => createCert(opts));
+
+  // Not long enough
+  // eslint-disable-next-line require-atomic-updates
+  opts.minRunDays = 7;
+  await assert.doesNotReject(() => createCert(opts));
+
+  await kc.delete(opts);
+  await kc.ca?.delete(opts);
 });

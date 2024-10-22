@@ -40,8 +40,8 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
     // One minute before certificate goes invalid, shut down.
     const afterTime = cert.notAfter.getTime() - new Date().getTime() - 60000;
     this.#certTimout = setTimeout(() => {
-      this.log('Certificate about to be invalid.  Shutting down.');
-      this.close();
+      this.log(`Certificate about to be invalid (${cert.notAfter}).  Shutting down.`);
+      this.#ac.abort();
     }, afterTime);
     this.#ac.signal.addEventListener('abort', () => clearTimeout(this.#certTimout));
 
@@ -86,7 +86,8 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
     await this.#wg?.start();
 
     this.#server = http2.createSecureServer({
-      ...this.#cert,
+      key: this.#cert.key,
+      cert: this.#cert.cert,
       allowHTTP1: true, // Needed to make ws work
     }, async(req, res) => {
       const code = await staticFile(this.#opts, this.#state, req, res);

@@ -6,6 +6,7 @@ import {fileURLToPath} from 'node:url';
 import fs from 'node:fs/promises';
 import http2 from 'node:http2';
 import mt from 'mime-types';
+import {parseIfNoneMatch} from './utils.js';
 import path from 'node:path';
 
 export interface ServerState {
@@ -130,10 +131,8 @@ export async function staticFile(
     let mime = mt.lookup(file) || 'text/plain';
     // Same alg as nginx.  MUST have dquotes.
     const etag = `"${stat.mtime.getTime().toString(16)}-${stat.size.toString(16)}"`;
-    const inm = req.headers['if-none-match'];
-    // If prefaced with W/, that means "weak" algorithm ok.
-    // We're already pretty weak. :)
-    if (inm?.replace(/^W\/(?=")/, '') === etag) {
+    const inm = parseIfNoneMatch(req.headers['if-none-match']);
+    if (inm.has(etag)) {
       fh.close();
       return error(NOT_MODIFIED, 'Not Modified', {etag});
     }
