@@ -37,6 +37,14 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
     // Chain incoming signal onto our internal one.
     this.#opts.signal?.addEventListener('abort', () => this.#ac.abort());
 
+    // One minute before certificate goes invalid, shut down.
+    const afterTime = cert.notAfter.getTime() - new Date().getTime() - 60000;
+    this.#certTimout = setTimeout(() => {
+      this.log(`Certificate about to be invalid (${cert.notAfter}).  Shutting down.`);
+      this.#ac.abort();
+    }, afterTime);
+    this.#ac.signal.addEventListener('abort', () => clearTimeout(this.#certTimout));
+
     // Files we're going to watch before executing build step.
     // Usually inputs to be built into the files we serve.
     if (this.#opts.glob?.length) {
@@ -63,20 +71,13 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
 
     this.#state = {
       headers: {
-        Server: `${pkgName}/${pkgVersion}`,
+        'Server': `${pkgName}/${pkgVersion}`,
+        'cache-control': `max-age=${Math.floor(afterTime / 1000)}`,
       },
       base: this.#opts.dir,
       baseURL: this.#base(),
       watcher,
     };
-
-    // One minute before certificate goes invalid, shut down.
-    const afterTime = cert.notAfter.getTime() - new Date().getTime() - 60000;
-    this.#certTimout = setTimeout(() => {
-      this.log('Certificate about to be invalid.  Shutting down.');
-      this.close();
-    }, afterTime);
-    this.#ac.signal.addEventListener('abort', () => clearTimeout(this.#certTimout));
   }
 
   public async start(): Promise<void> {
@@ -85,7 +86,8 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
     await this.#wg?.start();
 
     this.#server = http2.createSecureServer({
-      ...this.#cert,
+      key: this.#cert.key,
+      cert: this.#cert.cert,
       allowHTTP1: true, // Needed to make ws work
     }, async(req, res) => {
       const code = await staticFile(this.#opts, this.#state, req, res);
