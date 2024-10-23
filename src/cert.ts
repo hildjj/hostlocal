@@ -1,5 +1,5 @@
+import {deleteSecret, getSecret, setSecret} from './keychain.js';
 import fs from 'node:fs/promises';
-import keytar from 'keytar';
 import path from 'node:path';
 import rs from 'jsrsasign';
 
@@ -7,7 +7,7 @@ const HOUR_ms = 60 * 60 * 1000;
 const DAY_ms = 24 * HOUR_ms;
 const CA_FILE = '_CA';
 const CA_SUBJECT = 'C=US/ST=Colorado/L=Denver/CN=HostLocal-Root-CA';
-const KEYTAR_SERVICE = 'HostLocal';
+const KEYCHAIN_SERVICE = 'com.github.hildjj.HostLocal';
 
 export type LogFn = (...data: any[]) => void;
 
@@ -32,7 +32,9 @@ export interface CertOptions {
   log?: LogFn;
 }
 
-export const DEFAULT_CERT_OPTIONS: Required<CertOptions> = {
+export type RequiredCertOptions = Required<CertOptions>;
+
+export const DEFAULT_CERT_OPTIONS: RequiredCertOptions = {
   minRunDays: 1,
   notAfterDays: 7,
   certDir: '.cert',
@@ -78,15 +80,12 @@ export class KeyCert {
   }
 
   public static async read(
-    opts: Required<CertOptions>,
+    opts: RequiredCertOptions,
     name: string
   ): Promise<KeyCert | null> {
     try {
       const names = this.#getNames(opts, name);
-      const key = await keytar.getPassword(KEYTAR_SERVICE, names.keyName);
-      if (!key) {
-        return null;
-      }
+      const key = await getSecret(opts, KEYCHAIN_SERVICE, names.keyName);
       const cert = await fs.readFile(names.certName, 'utf8');
       const kc = new KeyCert(name, key, cert);
       // If the server can't run for at least a day, create new certs.
@@ -103,9 +102,9 @@ export class KeyCert {
     }
   }
 
-  static #getNames(opts: Required<CertOptions>, name: string): KeyCertNames {
+  static #getNames(opts: RequiredCertOptions, name: string): KeyCertNames {
     const certDir = path.resolve(process.cwd(), opts.certDir);
-    const keyName = path.join(certDir, name);
+    const keyName = path.join(certDir, `${name}.key.pem`);
     const certName = path.join(certDir, `${name}.cert.pem`);
     return {
       certDir,
@@ -114,16 +113,16 @@ export class KeyCert {
     };
   }
 
-  public async delete(opts: Required<CertOptions>): Promise<void> {
+  public async delete(opts: RequiredCertOptions): Promise<void> {
     const names = KeyCert.#getNames(opts, this.name);
-    await keytar.deletePassword(KEYTAR_SERVICE, names.keyName);
+    await deleteSecret(opts, KEYCHAIN_SERVICE, names.keyName);
     await fs.rm(names.certName);
   }
 
-  public async write(opts: Required<CertOptions>): Promise<void> {
+  public async write(opts: RequiredCertOptions): Promise<void> {
     const names = KeyCert.#getNames(opts, this.name);
-    await keytar.setPassword(KEYTAR_SERVICE, names.keyName, this.key);
     await fs.mkdir(names.certDir, {recursive: true});
+    await setSecret(opts, KEYCHAIN_SERVICE, names.keyName, this.key);
     await fs.writeFile(names.certName, this.cert, 'utf8');
   }
 }
@@ -135,7 +134,7 @@ export class KeyCert {
  * @returns Private Key / Certificate for CA.
  */
 export async function createCA(options: CertOptions): Promise<KeyCert> {
-  const opts: Required<CertOptions> = {
+  const opts: RequiredCertOptions = {
     ...DEFAULT_CERT_OPTIONS,
     ...options,
   };
@@ -190,7 +189,7 @@ sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keyc
 export async function createCert(
   options: CertOptions
 ): Promise<KeyCert> {
-  const opts: Required<CertOptions> = {
+  const opts: RequiredCertOptions = {
     ...DEFAULT_CERT_OPTIONS,
     ...options,
   };
