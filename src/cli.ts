@@ -24,6 +24,10 @@ function toInt(val: string): number {
   return ret;
 }
 
+function incr(_val: string, prev: number): number {
+  return prev + 1;
+}
+
 /**
  * Run the CLI for the given arguments.
  *
@@ -53,11 +57,13 @@ export async function cli(
     .option('-e, --exec <shell command>', `Execute this command when the glob changes. (default: "${DEFAULT_HOST_OPTIONS.exec}")`)
     .option('-H, --host <address>', 'Hostname or IP address to listen on. "::" for everything. (default: "localhost")')
     .option('-i, --initial', 'If glob is specified, run the exec command on startup, before listening')
+    .option('--logFile <file>', 'If specified, JSON logs are written to this file')
     .option('--notAfterDays <number>', `How many days is the certificate valid? (default: ${DEFAULT_HOST_OPTIONS.notAfterDays})`, toInt)
     .option('-o, --open <path>', `Open this path in the default browser.  Relative to server root and prefix, if specified.  If empty (""), do not open anything. (default: "${DEFAULT_HOST_OPTIONS.open}")`)
     .option('-p, --port <number>', `Port to serve content from.  Use 0 to get an unused port. (default: ${DEFAULT_HOST_OPTIONS.port})`, toInt)
     .option('-P, --prefix <string>', 'Make all of the URLs served have paths that start with this prefix, followed by a slash.')
-    .option('-q, --quiet', 'Do not do logging')
+    .option('-q, --quiet', 'Do less logging.  Can be specified more than once.', incr, 0)
+    .option('-v, --verbose', 'Do more logging.  Can be specified more than once.', incr, 0)
     .option('--rawMarkdown', 'Do not process markdown into HTML')
     .option('-t, --timeout <number>', 'Time, in ms, to allow exec to run.', toInt)
     .addOption(
@@ -72,6 +78,9 @@ export async function cli(
     })
     .action((directory, opts) => {
       opts.signal = signal;
+      if (opts.quiet || opts.verbose) {
+        opts.logLevel = opts.verbose - opts.quiet;
+      }
       return hostLocal(directory, opts).then(s => s.start());
     })
     .parseAsync(args);

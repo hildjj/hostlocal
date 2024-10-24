@@ -14,13 +14,13 @@ test('has title', async({page}) => {
   response = await page.request.get('/favicon.ico');
   expect(response.status()).toBe(200);
 
-  await page.goto('', {waitUntil: 'networkidle'});
-  await expect(page).toHaveTitle('/prefix/');
+  await page.goto('docs/index.html', {waitUntil: 'networkidle'});
+  await expect(page).toHaveTitle(/hostlocal - v\d+\.\d+\.\d+/);
 
   const now = new Date();
-  await fs.utimes(new URL('../README.md', import.meta.url), now, now);
+  await fs.utimes(new URL('../docs/index.html', import.meta.url), now, now);
 
-  await page.waitForURL('/prefix/', {waitUntil: 'load'});
+  await page.waitForURL('docs/index.html', {waitUntil: 'load'});
 
   await page.evaluate(() => {
     // eslint-disable-next-line no-undef

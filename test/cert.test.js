@@ -1,6 +1,7 @@
 import assert from 'node:assert';
 import {createCert} from '../lib/cert.js';
 import fs from 'node:fs/promises';
+import {normalizeOptions} from '../lib/opts.js';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -14,13 +15,12 @@ test.after(async() => {
 test('createCert', async() => {
   assert(tmp);
 
-  const opts = {
+  const opts = await normalizeOptions({
     certDir: tmp,
-    log() {
-      // Ignored.
-    },
     notAfterDays: 3,
-  };
+    logLevel: -10,
+    logFile: path.join(tmp, 'cert.log'),
+  });
 
   const kc = await createCert(opts);
   const {key, cert, notAfter} = kc;

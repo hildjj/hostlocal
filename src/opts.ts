@@ -2,6 +2,7 @@ import {type CertOptions, DEFAULT_CERT_OPTIONS} from './cert.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
+import {setLogLevel} from './log.js';
 
 export interface HostOptions extends CertOptions {
 
@@ -72,6 +73,7 @@ export const DEFAULT_HOST_OPTIONS: RequiredHostOptions = {
   index: ['index.html', 'index.htm', 'README.md'],
   initial: false,
   ipv6: false,
+  logLevel: 0,
   open: '.',
   port: 8111,
   prefix: '',
@@ -135,5 +137,12 @@ export async function normalizeOptions(
   }
   rest.dir = await fs.realpath(rest.dir);
 
+  setLogLevel(rest);
+  rest.log = rest.log.child({
+    host: rest.host,
+    port: rest.port,
+  });
+
+  rest.log.debug(rest, 'Normalized options');
   return rest;
 }

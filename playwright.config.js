@@ -67,7 +67,7 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: `node bin/hostlocal.js --host ::1 -P ${prefix} -g README.md --shutTimes ${projects.length} -o ""`,
+    command: `node bin/hostlocal.js -v --host ::1 -P ${prefix} -g README.md --shutTimes ${projects.length} -o ""`,
     url: baseURL,
     reuseExistingServer: !isCI,
     ignoreHTTPSErrors: true,

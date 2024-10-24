@@ -12,6 +12,7 @@ test('staticFile', async() => {
     config: 'DOES_NOT_EXIST',
     rawMarkdown: true,
     index: ['__DOES_NOT_EXIST__', 'src', 'index.html', 'index.htm', 'README.md'],
+    logLevel: 10,
   });
   const state = {
     headers: {
@@ -46,6 +47,9 @@ test('staticFile', async() => {
 
   code = await staticFile(opts, state, ...reqRes('/test/fixtures/foo.unknown-type'));
   assert.equal(code, 200);
+
+  code = await staticFile(opts, state, ...reqRes('/docs'));
+  assert.equal(code, 301);
 
   state.baseURL.pathname += '/foo';
   code = await staticFile(opts, state, ...reqRes('/unknown'));

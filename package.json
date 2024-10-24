@@ -58,6 +58,7 @@
     "markdown-it": "14.1.0",
     "mime-types": "2.1.35",
     "open": "10.1.0",
+    "pino": "9.5.0",
     "ws": "8.18.0"
   },
   "devDependencies": {
@@ -66,7 +67,7 @@
     "@types/jsrsasign": "10.5.14",
     "@types/markdown-it": "14.1.2",
     "@types/mime-types": "2.1.4",
-    "@types/node": "22.7.7",
+    "@types/node": "22.7.9",
     "@types/ws": "8.5.12",
     "c8": "10.1.2",
     "eslint": "9.13.0",
@@ -74,6 +75,7 @@
     "eslint-plugin-markdown": "5.1.0",
     "node-mocks-http": "1.16.1",
     "package-extract": "2.3.0",
+    "pino-pretty": "11.3.0",
     "rimraf": "6.0.1",
     "snappy-snaps": "1.1.0",
     "typedoc": "0.26.10",
