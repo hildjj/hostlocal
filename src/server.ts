@@ -1,6 +1,6 @@
+import type {AddressInfo, Socket} from 'node:net';
 import {type ServerState, staticFile} from './staticFile.js';
 import {name as pkgName, version as pkgVersion} from './version.js';
-import type {AddressInfo} from 'node:net';
 import type {Duplex} from 'node:stream';
 import {EventEmitter} from 'node:events';
 import type {KeyCert} from './cert.js';
@@ -102,9 +102,13 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
     });
 
     // HTTP2 doesn't have closeAllConnections
-    this.#server.on('connection', (s: Duplex) => {
+    this.#server.on('connection', (s: Socket) => {
+      this.#opts.log.trace('Add sock %s:%d', s.remoteAddress, s.remotePort);
       this.#socks.add(s);
-      s.once('close', () => this.#socks.delete(s));
+      s.once('close', () => {
+        this.#opts.log.trace('Remove sock %s:%d', s.remoteAddress, s.remotePort);
+        this.#socks.delete(s);
+      });
     });
     this.#ac.signal.addEventListener('abort', () => {
       for (const s of this.#socks) {

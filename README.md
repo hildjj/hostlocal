@@ -50,6 +50,7 @@ Options:
                               everything. (default: "localhost")
   -i, --initial               If glob is specified, run the exec command on
                               startup, before listening
+  --logFile <file>            If specified, JSON logs are written to this file
   --notAfterDays <number>     How many days is the certificate valid? (default:
                               7)
   -o, --open <path>           Open this path in the default browser.  Relative
@@ -59,9 +60,12 @@ Options:
                               unused port. (default: 8111)
   -P, --prefix <string>       Make all of the URLs served have paths that start
                               with this prefix, followed by a slash.
-  -q, --quiet                 Do not do logging
+  -q, --quiet                 Do less logging.  Can be specified more than
+                              once.
   --rawMarkdown               Do not process markdown into HTML
   -t, --timeout <number>      Time, in ms, to allow exec to run.
+  -v, --verbose               Do more logging.  Can be specified more than
+                              once.
   -V, --version               output the version number
 ```
 
@@ -79,12 +83,14 @@ export default {
   glob: [],
   host: 'localhost',
   index: ['index.html', 'index.htm', 'README.md'],
+  initial: false,
   ipv6: false,
+  logLevel: 0, // -3: fatal, -2: error, -1: warn, 0: info, 1: debug, 2: trace
+  logFile: null,
   notAfterDays: 7,
-  open: '/',
+  open: '.',
   port: 8111,
   prefix: '',
-  quiet: false,
   rawMarkdown: false,
   timeout: null,
 };

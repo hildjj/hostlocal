@@ -45,9 +45,6 @@ export interface HostOptions extends CertOptions {
    */
   prefix?: string;
 
-  /** No logging if true. */
-  quiet?: boolean;
-
   /** If true, do not process markdown to HTML. */
   rawMarkdown?: boolean;
 
@@ -73,11 +70,9 @@ export const DEFAULT_HOST_OPTIONS: RequiredHostOptions = {
   index: ['index.html', 'index.htm', 'README.md'],
   initial: false,
   ipv6: false,
-  logLevel: 0,
   open: '.',
   port: 8111,
   prefix: '',
-  quiet: false,
   rawMarkdown: false,
   shutTimes: Infinity,
   signal: null,
@@ -137,12 +132,10 @@ export async function normalizeOptions(
   }
   rest.dir = await fs.realpath(rest.dir);
 
-  setLogLevel(rest);
-  rest.log = rest.log.child({
+  setLogLevel(rest, {
     host: rest.host,
     port: rest.port,
   });
-
   rest.log.debug(rest, 'Normalized options');
   return rest;
 }

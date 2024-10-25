@@ -43,7 +43,7 @@
     "poscoverage": "npm run ts",
     "test": "c8 npm run coverage",
     "docs": "typedoc",
-    "start": "node bin/hostlocal.js",
+    "start": "NODE_NO_WARNINGS=1 node bin/hostlocal.js",
     "ts": "tsc",
     "build:noweb": "npm run docs && npm run ts && npm run spotcheck && npm run lint && npm pack --dry-run",
     "build": "npm run docs && npm run test && npm run lint && npm pack --dry-run",
