@@ -2,6 +2,7 @@ import {type CertOptions, DEFAULT_CERT_OPTIONS} from './cert.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
+import {setLogLevel} from './log.js';
 
 export interface HostOptions extends CertOptions {
 
@@ -44,9 +45,6 @@ export interface HostOptions extends CertOptions {
    */
   prefix?: string;
 
-  /** No logging if true. */
-  quiet?: boolean;
-
   /** If true, do not process markdown to HTML. */
   rawMarkdown?: boolean;
 
@@ -75,7 +73,6 @@ export const DEFAULT_HOST_OPTIONS: RequiredHostOptions = {
   open: '.',
   port: 8111,
   prefix: '',
-  quiet: false,
   rawMarkdown: false,
   shutTimes: Infinity,
   signal: null,
@@ -135,5 +132,10 @@ export async function normalizeOptions(
   }
   rest.dir = await fs.realpath(rest.dir);
 
+  setLogLevel(rest, {
+    host: rest.host,
+    port: rest.port,
+  });
+  rest.log.debug(rest, 'Normalized options');
   return rest;
 }

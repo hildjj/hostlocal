@@ -1,3 +1,4 @@
+import {DEFAULT_LOG_OPTIONS, LogOptions} from './log.js';
 import {deleteSecret, getSecret, setSecret} from './keychain.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -9,9 +10,7 @@ const CA_FILE = '_CA';
 const CA_SUBJECT = 'C=US/ST=Colorado/L=Denver/CN=HostLocal-Root-CA';
 const KEYCHAIN_SERVICE = 'com.github.hildjj.HostLocal';
 
-export type LogFn = (...data: any[]) => void;
-
-export interface CertOptions {
+export interface CertOptions extends LogOptions {
 
   /**
    * Minimum number of days the serve can run.  Ensure the cert will good
@@ -27,20 +26,16 @@ export interface CertOptions {
 
   /** Hostname for cert.  Used for subject CN, DNS subjectAltName. */
   host?: string;
-
-  /** Where to log info? */
-  log?: LogFn;
 }
 
 export type RequiredCertOptions = Required<CertOptions>;
 
 export const DEFAULT_CERT_OPTIONS: RequiredCertOptions = {
+  ...DEFAULT_LOG_OPTIONS,
   minRunDays: 1,
   notAfterDays: 7,
   certDir: '.cert',
   host: 'localhost',
-  // eslint-disable-next-line no-console
-  log: console.log,
 };
 
 interface KeyCertNames {
@@ -144,7 +139,7 @@ export async function createCA(options: CertOptions): Promise<KeyCert> {
     return pair; // Still valid.
   }
 
-  opts.log('Creating new CA certificate');
+  opts.log.info('Creating new CA certificate');
   // Create a self-signed CA cert
   const kp = rs.KEYUTIL.generateKeypair('EC', 'secp256r1');
   const prv = kp.prvKeyObj;
@@ -172,7 +167,7 @@ export async function createCA(options: CertOptions): Promise<KeyCert> {
   await kc.write(opts);
 
   if (process.platform === 'darwin') {
-    opts.log(`
+    opts.log.info(`
 To trust the new CA, try:
 sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain ${path.resolve(opts.certDir, CA_FILE)}.cert.pem
 `);
@@ -200,7 +195,7 @@ export async function createCert(
   }
 
   const ca = await createCA(opts);
-  opts.log(`Creating cert for "${opts.host}".`);
+  opts.log.info(`Creating cert for "${opts.host}".`);
 
   const now = new Date();
   const recently = new Date(now.getTime() - 10000); // 10s ago.

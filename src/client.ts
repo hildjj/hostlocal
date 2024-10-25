@@ -2,8 +2,9 @@ const u = new URL(document.location.href);
 let ws: WebSocket | null = null;
 let timer: NodeJS.Timeout | null = null;
 let warning: HTMLDivElement | null = null;
+let reconnect = true;
 
-function randTime(): number {
+function getWarning(): HTMLDivElement {
   if (!warning) {
     warning = document.createElement('div');
     warning.innerText = 'Server down.  Reconnecting...';
@@ -22,6 +23,11 @@ function randTime(): number {
     document.body.appendChild(warning);
   }
   warning.hidden = false;
+  return warning;
+}
+
+function randTime(): number {
+  getWarning();
 
   // 1-2s.
   return 1000 + Math.floor(Math.random() * 1000);
@@ -37,7 +43,7 @@ function connect(): void {
   ws = new WebSocket(url);
   ws.onopen = (_ev): void => {
     if (timer) {
-      clearInterval(timer);
+      clearTimeout(timer);
       timer = null;
     }
     if (warning) {
@@ -53,13 +59,17 @@ function connect(): void {
   // Failed trying to connect.
   ws.onerror = (_ev): void => {
     ws = null;
-    timer = setInterval(connect, randTime());
+    if (reconnect) {
+      timer = setTimeout(connect, randTime());
+    }
   };
 
   // Server shutdown
   ws.onclose = (_ev): void => {
     ws = null;
-    timer = setInterval(connect, randTime());
+    if (reconnect) {
+      timer = setTimeout(connect, randTime());
+    }
   };
 }
 
@@ -67,6 +77,10 @@ connect();
 
 /** Shut down the server.  Called from playwright tests. */
 (globalThis as any).hostLocalSendShutdown = (): void => {
+  // We're trying to shut down the server, so don't just reconnect
+  reconnect = false;
+  getWarning().innerText = 'Server shutting down.';
+
   ws?.send(JSON.stringify({
     type: 'shutdown',
     url: window.location.href,

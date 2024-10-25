@@ -4,6 +4,7 @@ import {createCert} from './cert.js';
 
 export type {HostOptions} from './opts.js';
 export type {KeyCert} from './cert.js';
+export type {AnyKey, CertOptions} from './cert.js';
 
 /**
  * Server a directory via HTTPS.

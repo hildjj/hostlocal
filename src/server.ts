@@ -1,6 +1,6 @@
+import type {AddressInfo, Socket} from 'node:net';
 import {type ServerState, staticFile} from './staticFile.js';
 import {name as pkgName, version as pkgVersion} from './version.js';
-import type {AddressInfo} from 'node:net';
 import type {Duplex} from 'node:stream';
 import {EventEmitter} from 'node:events';
 import type {KeyCert} from './cert.js';
@@ -40,10 +40,17 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
     // One minute before certificate goes invalid, shut down.
     const afterTime = cert.notAfter.getTime() - new Date().getTime() - 60000;
     this.#certTimout = setTimeout(() => {
-      this.log(`Certificate about to be invalid (${cert.notAfter}).  Shutting down.`);
+      this.#opts.log.error(
+        'Certificate about to be invalid (%s).  Shutting down.',
+        cert.notAfter
+      );
       this.#ac.abort();
     }, afterTime);
-    this.#ac.signal.addEventListener('abort', () => clearTimeout(this.#certTimout));
+    this.#ac.signal.addEventListener('abort', () => {
+      this.#opts.log.info('Shutting down');
+      this.#opts.log.flush();
+      clearTimeout(this.#certTimout);
+    });
 
     // Files we're going to watch before executing build step.
     // Usually inputs to be built into the files we serve.
@@ -52,7 +59,7 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
         ...this.#opts,
         signal: this.#ac.signal,
       });
-      this.#wg.on('error', er => this.log((er as Error).message));
+      this.#wg.on('error', er => this.#opts.log.error(er));
     }
 
     // Watch for files we've served.
@@ -91,13 +98,17 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
       allowHTTP1: true, // Needed to make ws work
     }, async(req, res) => {
       const code = await staticFile(this.#opts, this.#state, req, res);
-      this.log(req.method, String(code), req.url);
+      this.#opts.log.info('%s %d %s', req.method, code, req.url);
     });
 
     // HTTP2 doesn't have closeAllConnections
-    this.#server.on('connection', (s: Duplex) => {
+    this.#server.on('connection', (s: Socket) => {
+      this.#opts.log.trace('Add sock %s:%d', s.remoteAddress, s.remotePort);
       this.#socks.add(s);
-      s.once('close', () => this.#socks.delete(s));
+      s.once('close', () => {
+        this.#opts.log.trace('Remove sock %s:%d', s.remoteAddress, s.remotePort);
+        this.#socks.delete(s);
+      });
     });
     this.#ac.signal.addEventListener('abort', () => {
       for (const s of this.#socks) {
@@ -117,11 +128,11 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
       const base = this.#base();
       this.#state.baseURL = base;
 
-      this.log('Listening on', base.toString());
+      this.#opts.log.info('Listening on: %s', base);
       if (this.#opts.open) {
         const u = new URL(this.#opts.open, base).toString();
         // Ignore promise
-        open(u).catch((er: unknown) => this.log((er as Error).message));
+        open(u).catch((er: unknown) => this.#opts.log.error(er));
       }
       this.emit('listen', base);
     });
@@ -132,7 +143,7 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
     this.#wss = new WebSocketServer({server: this.#server});
 
     this.#wss.on('connection', ws => {
-      ws.on('error', (er: Error) => this.log(er.message));
+      ws.on('error', (er: Error) => this.#opts.log.error(er));
       ws.on('message', msg => {
         const jmsg = JSON.parse(msg.toString());
         this.emit('wsmessage', jmsg);
@@ -140,8 +151,10 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
           case 'shutdown':
             // Completely insecure when shutTimes < Infinity.
             // Only set shutTimes when testing.
+            this.#opts.log.debug('Shutdown request %d', this.#opts.shutTimes);
+            ws.close();
             if (--this.#opts.shutTimes <= 0) {
-              process.exit(0);
+              this.close();
             }
             break;
         }
@@ -151,16 +164,6 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
 
   public close(): void {
     this.#ac.abort();
-  }
-
-  public log(...str: string[]): void {
-    if (!this.#opts.quiet) {
-      const now = new Date()
-        .toLocaleString('sv')
-        .replace(' ', 'T');
-      // eslint-disable-next-line no-console
-      console.log(now, ...str);
-    }
   }
 
   #base(): URL {

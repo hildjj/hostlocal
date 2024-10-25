@@ -29,6 +29,7 @@ export const {
   HTTP_STATUS_NOT_MODIFIED: NOT_MODIFIED,
   HTTP_STATUS_OK: OK,
   HTTP_STATUS_NO_CONTENT: NO_CONTENT,
+  HTTP_STATUS_MOVED_PERMANENTLY: MOVED_PERMANENTLY,
 } = http2.constants;
 
 async function findExistingFile(
@@ -121,7 +122,14 @@ export async function staticFile(
     let stat = await fh.stat();
     if (stat.isDirectory()) {
       await fh.close();
-      [file, fh, stat] = await findExistingFile(file, opts.index);
+      if (req.url.endsWith('/')) {
+        [file, fh, stat] = await findExistingFile(file, opts.index);
+      } else {
+        // Without the trailing /, all relative URLs gonna puke.
+        return error(MOVED_PERMANENTLY, 'Moved Permanently', {
+          location: `${req.url}/`,
+        });
+      }
     }
 
     // Even if we 304, some client is waiting for updates on this file.

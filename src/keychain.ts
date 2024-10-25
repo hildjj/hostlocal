@@ -16,7 +16,7 @@ export function getSecret(
   _service: string,
   account: string
 ): Promise<string> {
-  opts.log('WARNING: reading key from untrusted store:', account);
+  opts.log.warn('Reading key from untrusted store: "%s"', account);
   return fs.readFile(account, 'utf8');
 }
 
@@ -34,7 +34,7 @@ export async function setSecret(
   account: string,
   secret: string
 ): Promise<void> {
-  opts.log('WARNING: writing key to untrusted store:', account);
+  opts.log.warn('Writing key to untrusted store: "%s"', account);
   await fs.writeFile(account, secret, 'utf8');
 }
 
@@ -50,6 +50,6 @@ export async function deleteSecret(
   _service: string,
   account: string
 ): Promise<void> {
-  opts.log('WARNING: deleting key in untrusted store:', account);
+  opts.log.warn('Deleting key in untrusted store: "%s"', account);
   await fs.rm(account);
 }

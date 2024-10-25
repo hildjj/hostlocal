@@ -29,7 +29,7 @@ test('index', async() => {
     config: null,
     open: null,
     port: 9111,
-    quiet: true,
+    logLevel: -3,
     signal: ac.signal,
     // Shut the server down when the cert expires.
     notAfterDays: 62 / (24 * 60 * 60), // 60s before is when stop happens.
