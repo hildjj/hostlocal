@@ -59,15 +59,16 @@
     "mime-types": "2.1.35",
     "open": "10.1.0",
     "pino": "9.5.0",
+    "pino-pretty": "11.3.0",
     "ws": "8.18.0"
   },
   "devDependencies": {
-    "@cto.af/eslint-config": "5.0.1",
-    "@playwright/test": "1.48.1",
+    "@cto.af/eslint-config": "5.0.3",
+    "@playwright/test": "1.48.2",
     "@types/jsrsasign": "10.5.14",
     "@types/markdown-it": "14.1.2",
     "@types/mime-types": "2.1.4",
-    "@types/node": "22.7.9",
+    "@types/node": "22.8.4",
     "@types/ws": "8.5.12",
     "c8": "10.1.2",
     "eslint": "9.13.0",
@@ -75,14 +76,13 @@
     "eslint-plugin-markdown": "5.1.0",
     "node-mocks-http": "1.16.1",
     "package-extract": "2.3.0",
-    "pino-pretty": "11.3.0",
     "rimraf": "6.0.1",
     "snappy-snaps": "1.1.0",
     "typedoc": "0.26.10",
     "typescript": "5.6.3",
-    "typescript-eslint": "8.11.0"
+    "typescript-eslint": "8.12.2"
   },
-  "packageManager": "pnpm@9.12.2",
+  "packageManager": "pnpm@9.12.3",
   "engines": {
     "node": ">=22"
   }

@@ -3,8 +3,8 @@ import {parseIfNoneMatch} from '../lib/utils.js';
 import test from 'node:test';
 
 test('parseEtag', () => {
-  assert.deepEqual(parseIfNoneMatch(undefined), new Set());
-  assert.deepEqual(parseIfNoneMatch(null), new Set());
+  assert.deepEqual(parseIfNoneMatch(undefined), undefined);
+  assert.deepEqual(parseIfNoneMatch(null), undefined);
   assert.deepEqual(parseIfNoneMatch(''), new Set());
   assert.deepEqual(parseIfNoneMatch('*'), new Set(['*']));
   assert.deepEqual(parseIfNoneMatch('"foo"'), new Set(['"foo"']));

@@ -10,7 +10,8 @@ const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'hostlocal-test-index-'));
 const root = fileURLToPath(new URL('../', import.meta.url));
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
-test.after(() => {
+test.after(async() => {
+  await fs.rm(tmp, {recursive: true, force: true});
   delete process.env.NODE_TLS_REJECT_UNAUTHORIZED;
 });
 
@@ -41,10 +42,36 @@ test('index', async() => {
 
       const resp = await fetch(new URL('__DOES_NOT_EXIST__.html', url));
       assert.equal(resp.status, 404);
+
+      const hurl = new URL(url);
+      hurl.protocol = 'http:';
+      const red = await fetch(hurl, {redirect: 'manual'});
+      assert.equal(red.status, 301);
+
+      await new Promise((res, rej) => {
+        try {
+          // Same port, should fail startup.
+          hostLocal(root, {
+            certDir: tmp,
+            config: null,
+            open: null,
+            port: 9111,
+            logLevel: -3,
+          })
+            .then(server2 => {
+              server2.on('error', res);
+              server2.start();
+            })
+            .catch(rej);
+        } catch (e) {
+          reject(e);
+        }
+      });
     } catch (e) {
       reject(e);
     }
   });
+
   server.on('close', resolve);
   server.start();
   await promise;

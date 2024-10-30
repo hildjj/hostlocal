@@ -11,19 +11,22 @@ const otherTags = /\s*,\s*(?:W\/)?(?<others>"[^"]*")/g;
  * @returns Array of etags.
  * @see https://httpwg.org/specs/rfc9110.html#rfc.section.13.1.2
  */
-export function parseIfNoneMatch(inm: string | null | undefined): Set<string> {
+export function parseIfNoneMatch(
+  inm: string | null | undefined
+): Set<string> | undefined {
+  if (typeof inm !== 'string') {
+    return undefined;
+  }
   const res = new Set<string>();
-  if (inm) {
-    if (inm === '*') {
-      res.add('*');
-    } else {
-      const first = firstTag.exec(inm);
-      if (first) {
-        res.add(first[1]);
-        otherTags.lastIndex = first[0].length;
-        for (const other of inm.matchAll(otherTags)) {
-          res.add(other[1]);
-        }
+  if (inm === '*') {
+    res.add('*');
+  } else {
+    const first = firstTag.exec(inm);
+    if (first) {
+      res.add(first[1]);
+      otherTags.lastIndex = first[0].length;
+      for (const other of inm.matchAll(otherTags)) {
+        res.add(other[1]);
       }
     }
   }
