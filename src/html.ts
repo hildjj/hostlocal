@@ -36,7 +36,7 @@ const clientSrc = await fs.readFile(
   'utf8'
 );
 const clientScriptString = `
-<script type="module">
+<script type="module" id="hostlocal-client-script">
 ${clientSrc}
 </script>
 `;
