@@ -139,18 +139,27 @@ export async function staticFile(
     let mime = mt.lookup(file) || 'text/plain';
     // Same alg as nginx.  MUST have dquotes.
     const etag = `"${stat.mtime.getTime().toString(16)}-${stat.size.toString(16)}"`;
-    const inm = parseIfNoneMatch(req.headers['if-none-match']);
-    if (inm.has(etag)) {
-      fh.close();
-      return error(NOT_MODIFIED, 'Not Modified', {etag});
-    }
-
     const headers: http2.OutgoingHttpHeaders = {
       ...state.headers,
       'content-type': mime,
-      'date': new Date(stat.mtime).toUTCString(),
       etag,
+      'date': new Date().toUTCString(),
+      'last-modified': new Date(stat.mtime).toUTCString(),
     };
+    const inm = parseIfNoneMatch(req.headers['if-none-match']);
+    if (inm) {
+      if (inm.has(etag)) {
+        fh.close();
+        return error(NOT_MODIFIED, 'Not Modified', headers);
+      }
+    } else if (req.headers['if-modified-since']) {
+      const ims = new Date(req.headers['if-modified-since']);
+      const lm = new Date(stat.mtime.getTime());
+      lm.setMilliseconds(0);
+      if (ims >= lm) {
+        return error(NOT_MODIFIED, 'Not Modified', headers);
+      }
+    }
 
     if (req.method === 'HEAD') {
       // No content-length, because we don't want to open the file yet.
@@ -170,7 +179,7 @@ export async function staticFile(
       mime = 'text/html';
       headers['content-type'] = mime;
     }
-    if (mime === 'text/html') {
+    if (opts.script && (mime === 'text/html')) {
       info.stream = info.stream.pipe(new AddClient(info));
     }
 

@@ -48,6 +48,9 @@ export interface HostOptions extends CertOptions {
   /** If true, do not process markdown to HTML. */
   rawMarkdown?: boolean;
 
+  /** If true, append script to HTML to cause automatic refreshes. */
+  script?: boolean;
+
   /** Shut down the server when we are asked this many times. */
   shutTimes?: number;
 
@@ -74,6 +77,7 @@ export const DEFAULT_HOST_OPTIONS: RequiredHostOptions = {
   port: 8111,
   prefix: '',
   rawMarkdown: false,
+  script: true,
   shutTimes: Infinity,
   signal: null,
   timeout: null,

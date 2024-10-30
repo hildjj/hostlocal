@@ -79,5 +79,19 @@ test('staticFile', async() => {
   });
   code = await staticFile(opts, state, reqH, resH);
   assert.equal(code, 200);
+
+  const statM = await fs.stat(
+    new URL('../assets/favicon.ico', import.meta.url)
+  );
+  const ims = new Date(statM.mtime);
+  ims.setMilliseconds(0);
+
+  const [reqM, resM] = reqRes('/favicon.ico', {
+    headers: {
+      'if-modified-since': ims.toUTCString(),
+    },
+  });
+  code = await staticFile(opts, state, reqM, resM);
+  assert.equal(code, 304);
 });
 

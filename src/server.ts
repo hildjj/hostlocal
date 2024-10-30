@@ -5,9 +5,11 @@ import type {Duplex} from 'node:stream';
 import {EventEmitter} from 'node:events';
 import type {KeyCert} from './cert.js';
 import type {RequiredHostOptions} from './opts.js';
+import type {TLSSocket} from 'node:tls';
 import {WatchGlob} from './watchGlob.js';
 import {WatchSet} from './watchSet.js';
 import {WebSocketServer} from 'ws';
+import http from 'node:http';
 import http2 from 'node:http2';
 import open from 'open';
 import path from 'node:path';
@@ -110,6 +112,35 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
         this.#socks.delete(s);
       });
     });
+    this.#server.on('error', er => {
+      this.#opts.log.fatal(er.message);
+      this.close();
+    });
+
+    this.#server.on('tlsClientError', (er, sock) => {
+      // Hack to redirect http -> https
+      const err = er as NodeJS.ErrnoException;
+      if (err.code === 'ERR_SSL_HTTP_REQUEST') {
+        const tlsSocket = sock as TLSSocket;
+        // @ts-expect-error Internals
+        const p: Socket = tlsSocket._parent;
+        if (p) {
+          const res = new http.ServerResponse(
+            new http.IncomingMessage(p)
+          );
+          res.assignSocket(p);
+          const code = http2.constants.HTTP_STATUS_MOVED_PERMANENTLY;
+          res.writeHead(code, http.STATUS_CODES[code], {
+            'Server': `${pkgName}/${pkgVersion}`,
+            'Location': this.#base().toString(),
+            'Content-Length': 0,
+          });
+          res.end();
+          this.#opts.log.info('Redirecting HTTP to HTTPS');
+        }
+      }
+    });
+
     this.#ac.signal.addEventListener('abort', () => {
       for (const s of this.#socks) {
         s.destroy(); // Fires close event above, which cleans up.
@@ -128,6 +159,30 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
       const base = this.#base();
       this.#state.baseURL = base;
 
+      // @ts-expect-error See https://github.com/websockets/ws/issues/1458
+      this.#wss = new WebSocketServer({server: this.#server});
+
+      this.#wss.on('connection', ws => {
+        ws.on('error', (er: Error) => this.#opts.log.error(er));
+        ws.on('message', msg => {
+          const jmsg = JSON.parse(msg.toString());
+          this.emit('wsmessage', jmsg);
+          switch (jmsg?.type) {
+            case 'shutdown':
+              // Completely insecure when shutTimes < Infinity.
+              // Only set shutTimes when testing.
+              this.#opts.log.debug('Shutdown request %d', this.#opts.shutTimes);
+              ws.close();
+              if (--this.#opts.shutTimes <= 0) {
+                this.close();
+              }
+              break;
+          }
+        });
+      });
+      this.#wss.on('error', er => {
+        this.#opts.log.fatal(er.message);
+      });
       this.#opts.log.info('Listening on: %s', base);
       if (this.#opts.open) {
         const u = new URL(this.#opts.open, base).toString();
@@ -138,28 +193,6 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
     });
 
     this.#server.on('close', () => this.emit('close'));
-
-    // @ts-expect-error See https://github.com/websockets/ws/issues/1458
-    this.#wss = new WebSocketServer({server: this.#server});
-
-    this.#wss.on('connection', ws => {
-      ws.on('error', (er: Error) => this.#opts.log.error(er));
-      ws.on('message', msg => {
-        const jmsg = JSON.parse(msg.toString());
-        this.emit('wsmessage', jmsg);
-        switch (jmsg?.type) {
-          case 'shutdown':
-            // Completely insecure when shutTimes < Infinity.
-            // Only set shutTimes when testing.
-            this.#opts.log.debug('Shutdown request %d', this.#opts.shutTimes);
-            ws.close();
-            if (--this.#opts.shutTimes <= 0) {
-              this.close();
-            }
-            break;
-        }
-      });
-    });
   }
 
   public close(): void {
