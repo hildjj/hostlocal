@@ -20,14 +20,13 @@ test('has title', async({page}) => {
   const now = new Date();
   await fs.utimes(new URL('../docs/index.html', import.meta.url), now, now);
 
-  await page.waitForURL('docs/index.html', {waitUntil: 'load'});
+  await page.waitForURL('docs/index.html');
+  await page.waitForFunction(() => typeof hostLocalSendShutdown === 'function');
 
   await page.evaluate(() => {
     // eslint-disable-next-line no-undef
     hostLocalSendShutdown();
   });
 
-  await page.close({
-    runBeforeUnload: true,
-  });
+  await page.close();
 });

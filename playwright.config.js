@@ -7,6 +7,12 @@ const prefix = '/prefix';
 const baseURL = `https://localhost:${port}${prefix}/`;
 const isCI = Boolean(process.env.CI);
 
+let repeats = 1;
+const rei = process.argv.indexOf('--repeat-each');
+if (rei >= 0) {
+  repeats = parseInt(process.argv[rei + 1], 10);
+}
+
 /**
  * @type {import('@playwright/test').Project[]}
  */
@@ -67,7 +73,7 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: `node bin/hostlocal.js -v --host ::1 -P ${prefix} -g README.md --shutTimes ${projects.length} -o ""`,
+    command: `node bin/hostlocal.js -v --host ::1 -P ${prefix} -g README.md --shutTimes ${projects.length * repeats} -o ""`,
     url: baseURL,
     reuseExistingServer: !isCI,
     ignoreHTTPSErrors: true,
