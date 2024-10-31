@@ -5,6 +5,7 @@ import fs from 'node:fs/promises';
 import httpMocks from 'node-mocks-http';
 import {normalizeOptions} from '../lib/opts.js';
 import {staticFile} from '../lib/staticFile.js';
+// eslint-disable-next-line n/no-unsupported-features/node-builtins
 import test from 'node:test';
 
 test('staticFile', async() => {

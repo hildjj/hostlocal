@@ -69,7 +69,7 @@
     "@types/jsrsasign": "10.5.14",
     "@types/markdown-it": "14.1.2",
     "@types/mime-types": "2.1.4",
-    "@types/node": "22.8.4",
+    "@types/node": "22.8.5",
     "@types/ws": "8.5.12",
     "c8": "10.1.2",
     "eslint": "9.13.0",
