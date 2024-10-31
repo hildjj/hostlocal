@@ -40,7 +40,7 @@ export interface HostOptions extends CertOptions {
   ipv6?: boolean;
 
   /** Path to open. */
-  open?: string;
+  open?: string | boolean;
 
   /** TCP Port to listen on. */
   port?: number;

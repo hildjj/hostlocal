@@ -61,6 +61,7 @@ export async function cli(
     .option('--no-script', 'If specified, JavScript will not be added to the end of HTML files to do auto-refresh.')
     .option('--notAfterDays <number>', `How many days is the certificate valid? (default: ${DEFAULT_HOST_OPTIONS.notAfterDays})`, toInt)
     .option('-o, --open <path>', `Open this path in the default browser.  Relative to server root and prefix, if specified.  If empty (""), do not open anything. (default: "${DEFAULT_HOST_OPTIONS.open}")`)
+    .option('-O, --no-open', 'Do not open a page in the default browser.')
     .option('-p, --port <number>', `Port to serve content from.  Use 0 to get an unused port. (default: ${DEFAULT_HOST_OPTIONS.port})`, toInt)
     .option('-P, --prefix <string>', 'Make all of the URLs served have paths that start with this prefix, followed by a slash.')
     .option('-q, --quiet', 'Do less logging.  Can be specified more than once.', incr, 0)
