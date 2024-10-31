@@ -1,7 +1,7 @@
 import {ChokidarOptions, type FSWatcher, default as chokidar} from 'chokidar';
 import {EventEmitter} from 'node:events';
+import FastGlob from 'fast-glob';
 import {debounce} from './debounce.js';
-import fs from 'node:fs/promises';
 import {spawn} from 'node:child_process';
 
 export interface WatchOptions {
@@ -110,10 +110,13 @@ export class WatchGlob extends EventEmitter<WatchGlobEvents> {
       throw new Error('Already watching');
     }
 
-    const allFiles = await Array.fromAsync(
-      // eslint-disable-next-line n/no-unsupported-features/node-builtins
-      fs.glob(this.#glob, {cwd: this.#cwd})
-    );
+    const allFiles = await FastGlob.glob(this.#glob, {
+      cwd: this.#cwd,
+      dot: true,
+      onlyFiles: true,
+      braceExpansion: true,
+      globstar: true,
+    });
     this.#watch = chokidar.watch(allFiles, {...watchTiming, cwd: this.#cwd});
     const exec = debounce(() => this.#exec(), this.#debounceTimout);
     this.#watch.on('change', f => {

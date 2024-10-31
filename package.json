@@ -53,6 +53,7 @@
     "bufferutil": "4.0.8",
     "chokidar": "4.0.1",
     "commander": "12.1.0",
+    "fast-glob": "3.3.2",
     "jsrsasign": "11.1.0",
     "keytar": "7.9.0",
     "markdown-it": "14.1.0",
@@ -68,7 +69,7 @@
     "@types/jsrsasign": "10.5.14",
     "@types/markdown-it": "14.1.2",
     "@types/mime-types": "2.1.4",
-    "@types/node": "22.8.4",
+    "@types/node": "22.8.5",
     "@types/ws": "8.5.12",
     "c8": "10.1.2",
     "eslint": "9.13.0",
@@ -84,6 +85,6 @@
   },
   "packageManager": "pnpm@9.12.3",
   "engines": {
-    "node": ">=22"
+    "node": ">=18.8"
   }
 }

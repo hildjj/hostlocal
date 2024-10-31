@@ -4,6 +4,7 @@ import fs from 'node:fs/promises';
 import {normalizeOptions} from '../lib/opts.js';
 import os from 'node:os';
 import path from 'node:path';
+// eslint-disable-next-line n/no-unsupported-features/node-builtins
 import test from 'node:test';
 
 const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'hostlocal-test-cert-'));

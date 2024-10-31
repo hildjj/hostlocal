@@ -1,6 +1,7 @@
 import assert from 'node:assert';
 import {cli} from '../lib/cli.js';
 import snap from 'snappy-snaps';
+// eslint-disable-next-line n/no-unsupported-features/node-builtins
 import test from 'node:test';
 
 test('help', async() => {
