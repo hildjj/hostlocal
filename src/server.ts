@@ -185,7 +185,7 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
         this.#opts.log.fatal(er.message);
       });
       this.#opts.log.info('Listening on: %s', base);
-      if (this.#opts.open) {
+      if (this.#opts.open && (typeof this.#opts.open === 'string')) {
         const u = new URL(this.#opts.open, base).toString();
         // Ignore promise
         open(u).catch((er: unknown) => this.#opts.log.error(er));

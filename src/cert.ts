@@ -7,10 +7,15 @@ import rs from 'jsrsasign';
 const HOUR_ms = 60 * 60 * 1000;
 const DAY_ms = 24 * HOUR_ms;
 const CA_FILE = '_CA';
-const CA_SUBJECT = 'C=US/ST=Colorado/L=Denver/CN=HostLocal-Root-CA';
+const CA_SUBJECT = '/C=US/ST=Colorado/L=Denver/CN=HostLocal-Root-CA';
 const KEYCHAIN_SERVICE = 'com.github.hildjj.HostLocal';
 
 export interface CertOptions extends LogOptions {
+
+  /**
+   * Subject Distinguished Name for CA.
+   */
+  caSubject?: string;
 
   /**
    * Minimum number of days the serve can run.  Ensure the cert will good
@@ -32,6 +37,7 @@ export type RequiredCertOptions = Required<CertOptions>;
 
 export const DEFAULT_CERT_OPTIONS: RequiredCertOptions = {
   ...DEFAULT_LOG_OPTIONS,
+  caSubject: CA_SUBJECT,
   minRunDays: 1,
   notAfterDays: 7,
   certDir: '.cert',
@@ -55,6 +61,8 @@ export class KeyCert {
   public readonly key: string;
   public readonly cert: string;
   public readonly notAfter: Date;
+  public readonly subject: string;
+  public readonly issuer: string;
   public readonly ca: KeyCert | undefined;
 
   public constructor(
@@ -71,6 +79,8 @@ export class KeyCert {
     const x = new rs.X509();
     x.readCertPEM(this.cert);
     this.notAfter = rs.zulutodate(x.getNotAfter());
+    this.subject = x.getSubjectString();
+    this.issuer = x.getIssuerString();
     this.ca = ca;
   }
 
@@ -136,7 +146,10 @@ export async function createCA(options: CertOptions): Promise<KeyCert> {
 
   const pair = await KeyCert.read(opts, CA_FILE);
   if (pair) {
-    return pair; // Still valid.
+    if (pair.subject === opts.caSubject) {
+      return pair; // Still valid.
+    }
+    opts.log.warn(`Invalid issuer "${pair.subject}".`);
   }
 
   opts.log.info('Creating new CA certificate');
@@ -152,10 +165,10 @@ export async function createCA(options: CertOptions): Promise<KeyCert> {
   const ca_cert = new rs.KJUR.asn1.x509.Certificate({
     version: 3,
     serial: {int: now.getTime()},
-    issuer: {str: CA_SUBJECT},
+    issuer: {str: opts.caSubject},
     notbefore: rs.datetozulu(recently, false, false),
     notafter: rs.datetozulu(oneYear, false, false),
-    subject: {str: CA_SUBJECT},
+    subject: {str: opts.caSubject},
     sbjpubkey: pub,
     ext: [
       {extname: 'basicConstraints', cA: true},
@@ -191,7 +204,10 @@ export async function createCert(
 
   const pair = await KeyCert.read(opts, opts.host);
   if (pair) {
-    return pair; // Still valid.
+    if (pair.issuer === opts.caSubject) {
+      return pair; // Still valid.
+    }
+    opts.log.warn(`Invalid CA subject "${pair.issuer}".`);
   }
 
   const ca = await createCA(opts);
@@ -208,7 +224,7 @@ export async function createCert(
   const x = new rs.KJUR.asn1.x509.Certificate({
     version: 3,
     serial: {int: now.getTime()},
-    issuer: {str: CA_SUBJECT},
+    issuer: {str: ca.subject},
     notbefore: rs.datetozulu(recently, true, false),
     notafter: rs.datetozulu(nextWeek, true, false),
     subject: {str: `/CN=${opts.host}`},

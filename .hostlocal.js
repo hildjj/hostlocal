@@ -10,4 +10,5 @@ export default {
     'Cross-Origin-Opener-Policy': 'same-origin',
     'Cross-Origin-Embedder-Policy': 'require-corp',
   },
+  caSubject: '/C=US/ST=Colorado/L=Denver/CN=_HostLocal-hostlocal',
 };
