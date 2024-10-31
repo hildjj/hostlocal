@@ -49,8 +49,10 @@ Options:
   -H, --host <address>        Hostname or IP address to listen on. "::" for
                               everything. (default: "localhost")
   -i, --initial               If glob is specified, run the exec command on
-                              startup, before listening
-  --logFile <file>            If specified, JSON logs are written to this file
+                              startup, before listening.
+  --logFile <file>            If specified, JSON logs are written to this file.
+  --no-script                 If specified, JavScript will not be added to the
+                              end of HTML files to do auto-refresh.
   --notAfterDays <number>     How many days is the certificate valid? (default:
                               7)
   -o, --open <path>           Open this path in the default browser.  Relative
@@ -62,7 +64,7 @@ Options:
                               with this prefix, followed by a slash.
   -q, --quiet                 Do less logging.  Can be specified more than
                               once.
-  --rawMarkdown               Do not process markdown into HTML
+  --rawMarkdown               Do not process markdown into HTML.
   -t, --timeout <number>      Time, in ms, to allow exec to run.
   -v, --verbose               Do more logging.  Can be specified more than
                               once.
@@ -81,6 +83,7 @@ export default {
   config: '.hostlocal.js',
   exec: 'npm run build',
   glob: [],
+  headers: {},
   host: 'localhost',
   index: ['index.html', 'index.htm', 'README.md'],
   initial: false,
@@ -92,6 +95,7 @@ export default {
   port: 8111,
   prefix: '',
   rawMarkdown: false,
+  script: true,
   timeout: null,
 };
 ```

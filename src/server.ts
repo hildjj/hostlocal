@@ -82,6 +82,7 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
       headers: {
         'Server': `${pkgName}/${pkgVersion}`,
         'cache-control': `max-age=${Math.floor(afterTime / 1000)}`,
+        ...this.#opts.headers,
       },
       base: this.#opts.dir,
       baseURL: this.#base(),

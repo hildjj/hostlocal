@@ -1,4 +1,5 @@
 import {type CertOptions, DEFAULT_CERT_OPTIONS} from './cert.js';
+import {OutgoingHttpHeaders} from 'node:http2';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
@@ -17,6 +18,11 @@ export interface HostOptions extends CertOptions {
 
   /** Watch this glob.  When it changes, execute the exec command. */
   glob?: string[] | null;
+
+  /**
+   * Extra headers to add to every response.
+   */
+  headers?: OutgoingHttpHeaders;
 
   /** Hostname or IP address to listen on. "::" for everything. */
   host?: string;
@@ -69,6 +75,7 @@ export const DEFAULT_HOST_OPTIONS: RequiredHostOptions = {
   dir: process.cwd(),
   exec: 'npm run build',
   glob: [],
+  headers: Object.create(null),
   host: 'localhost',
   index: ['index.html', 'index.htm', 'README.md'],
   initial: false,
