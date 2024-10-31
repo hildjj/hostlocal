@@ -3,6 +3,7 @@ import assert from 'node:assert';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+// eslint-disable-next-line n/no-unsupported-features/node-builtins
 import test from 'node:test';
 
 const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'hostlocal-test-watch-'));
@@ -100,11 +101,14 @@ test('watchGlob bad exec exit', async t => {
       resolve();
     });
 
-    fs.writeFile(
-      newTs,
-      `export const now = new Date(${new Date().getTime()});`,
-      'utf8'
-    ).catch(reject);
+    // Timing is a little indenterminate on node 18.
+    setTimeout(() => {
+      fs.writeFile(
+        newTs,
+        `export const now = new Date(${new Date().getTime()});`,
+        'utf8'
+      ).catch(reject);
+    }, 100);
   });
 });
 
@@ -129,10 +133,13 @@ test('watchGlob exec signal', async t => {
       resolve();
     });
 
-    fs.writeFile(
-      newTs,
-      `export const now = new Date(${new Date().getTime()});`,
-      'utf8'
-    ).catch(reject);
+    // Timing is a little indenterminate on node 18.
+    setTimeout(() => {
+      fs.writeFile(
+        newTs,
+        `export const now = new Date(${new Date().getTime()});`,
+        'utf8'
+      ).catch(reject);
+    }, 100);
   });
 });
