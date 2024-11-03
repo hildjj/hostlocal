@@ -58,6 +58,7 @@ Options:
   -o, --open <path>           Open this path in the default browser.  Relative
                               to server root and prefix, if specified.  If
                               empty (""), do not open anything. (default: ".")
+  -O, --no-open               Do not open a page in the default browser.
   -p, --port <number>         Port to serve content from.  Use 0 to get an
                               unused port. (default: 8111)
   -P, --prefix <string>       Make all of the URLs served have paths that start
@@ -78,17 +79,22 @@ file, by default called ".hostlocal.js".  This is an ES6 module with a default
 export containing your config.  Its default value is:
 
 ```js
+/**
+ * @type {import('./lib/index.js').HostOptions}
+ */
 export default {
   certDir: '.cert',
   config: '.hostlocal.js',
+  dir: process.cwd(),
   exec: 'npm run build',
+  filter: {},
   glob: [],
   headers: {},
   host: 'localhost',
   index: ['index.html', 'index.htm', 'README.md'],
   initial: false,
   ipv6: false,
-  logLevel: 0, // -3: fatal, -2: error, -1: warn, 0: info, 1: debug, 2: trace
+  logLevel: 0,
   logFile: null,
   notAfterDays: 7,
   open: '.',
@@ -96,9 +102,38 @@ export default {
   prefix: '',
   rawMarkdown: false,
   script: true,
+  signal: null,
   timeout: null,
 };
 ```
+
+Command-line options take precedence over these.  Most of these match their
+command line options for semantics.  Others:
+
+- **dir**: Serve this directory (tied to optional directory in CLI).
+- **filter**: Object containing a map from original mime type to
+  `[command, newMimeType]` tuples.  The command is any shell command that takes
+  original source on stdin, and emits new source on stdout that should have the
+  given newMimeType.  **NOTE:** This feature has a high probability of generating
+  a security issue when you misconfigure it and allow external access.
+  This is an example that might work sometimes, but would be catastrophic with
+  untrusted inputs:
+
+```json
+{
+  "filter": {
+    "application/x-httpd-php": ["php", "text/html"],
+  }
+}
+```
+
+- **index**: Array of strings for files to search for if a directory is requested.
+- **logLevel**: The sum of the number of `-v` options (+1 each) an `-q` options
+  (-1 each).  -3: fatal, -2: error, -1: warn, 0: info, 1: debug, 2: trace.
+- **open**: Specify `""` or `false` to not open a file in the default browser.
+- **script**: The opposite of the `--no-script` CLI option.
+- **signal**: An abort signal that can be used to shut down the server as
+  cleanly as possible.
 
 ## API
 

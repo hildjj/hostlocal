@@ -11,4 +11,7 @@ export default {
     'Cross-Origin-Embedder-Policy': 'require-corp',
   },
   caSubject: '/C=US/ST=Colorado/L=Denver/CN=_HostLocal-hostlocal',
+  filter: {
+    'application/x-httpd-php': ['php', 'text/html'],
+  },
 };

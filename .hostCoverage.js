@@ -1,3 +1,6 @@
+/**
+ * @type {import('./lib/index.js').HostOptions}
+ */
 export default {
   port: 9000,
   dir: 'coverage/lcov-report',

@@ -16,6 +16,11 @@ export interface HostOptions extends CertOptions {
   /** Command to execute when watch glob matches. */
   exec?: string;
 
+  /** Filter all files of this content type through a shell command. */
+  filter?: {
+    [contentType: string]: [command: string, newContentType: string];
+  };
+
   /** Watch this glob.  When it changes, execute the exec command. */
   glob?: string[] | null;
 
@@ -74,6 +79,7 @@ export const DEFAULT_HOST_OPTIONS: RequiredHostOptions = {
   config: '.hostlocal.js',
   dir: process.cwd(),
   exec: 'npm run build',
+  filter: Object.create(null),
   glob: [],
   headers: Object.create(null),
   host: 'localhost',

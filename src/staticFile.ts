@@ -1,4 +1,5 @@
-import {AddClient, type FileInfo, MarkdownToHtml} from './html.js';
+import {AddClient, type FileInfo, FilterStream, MarkdownToHtml} from './html.js';
+import type {Logger} from 'pino';
 import type {RequiredHostOptions} from './opts.js';
 import type {Stats} from 'node:fs';
 import type {WatchSet} from './watchSet.js';
@@ -8,6 +9,7 @@ import http2 from 'node:http2';
 import mt from 'mime-types';
 import {parseIfNoneMatch} from './utils.js';
 import path from 'node:path';
+import {pipeline} from 'node:stream';
 
 export interface ServerState {
   base: string;
@@ -52,6 +54,21 @@ async function findExistingFile(
   const er = new Error('No index file found') as NodeJS.ErrnoException;
   er.code = 'ENOENT';
   throw er;
+}
+
+/**
+ * Work-around for timing issue during debugging.  Exported for testing only.
+ *
+ * @param log Logger.
+ * @param error Possibly an error, usually null.
+ */
+export function __debugError(
+  log: Logger,
+  error: NodeJS.ErrnoException | null
+): void {
+  if (error) {
+    log.debug(error.message);
+  }
 }
 
 /**
@@ -171,29 +188,53 @@ export async function staticFile(
       file,
       pathname,
       size: stat.size,
-      stream: fh.createReadStream(),
+      signal: opts.signal,
+      dir: opts.dir,
     };
 
+    const transforms: (
+      NodeJS.ReadableStream |
+      NodeJS.WritableStream |
+      NodeJS.ReadWriteStream
+    )[] = [];
+
     if ((mime === 'text/markdown') && !opts.rawMarkdown) {
-      info.stream = info.stream.pipe(new MarkdownToHtml(info));
+      transforms.push(new MarkdownToHtml(info));
       mime = 'text/html';
       headers['content-type'] = mime;
     }
     if (opts.script && (mime === 'text/html')) {
-      info.stream = info.stream.pipe(new AddClient(info));
+      transforms.push(new AddClient(info));
+    }
+    const filter = opts.filter[mime];
+    if (filter) {
+      if (!Array.isArray(filter) || filter.length !== 2) {
+        await fh.close();
+        throw new TypeError(`Invalid filter: ${filter}, expected [cmd, contentType]`);
+      }
+      const [cmd, newType] = filter;
+      opts.log.debug('Executing %s => %s => %s', mime, cmd, newType);
+      transforms.push(new FilterStream(info, cmd, newType));
+      mime = newType;
+      headers['content-type'] = newType;
     }
 
     if (info.size) {
       headers['content-length'] = info.size; // Otherwise chunked
     }
+    transforms.unshift(fh.createReadStream());
+    transforms.push(res);
     res.writeHead(OK, headers);
-    info.stream.pipe(res);
+    // Don't use the promise version of this. The promise will resolve after
+    // the stream ends, which means it will dangle in the tests.
+    pipeline(transforms, __debugError.bind(null, opts.log));
     return OK;
   } catch (e) {
     const err = e as NodeJS.ErrnoException;
     if (err.code === 'ENOENT') {
       return error(NOT_FOUND, `No such file: "${req.url}"`);
     }
+    opts.log.warn('Uncaught error: %s', err.message);
     return error(INTERNAL_SERVER_ERROR, err.message);
   }
 }

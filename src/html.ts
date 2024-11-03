@@ -1,7 +1,13 @@
-import {Readable, Transform, type TransformCallback} from 'node:stream';
+import {type ChildProcessWithoutNullStreams, spawn} from 'node:child_process';
+import {Transform, type TransformCallback} from 'node:stream';
 import {Buffer} from 'node:buffer';
 import fs from 'node:fs/promises';
 import markdownit from 'markdown-it';
+
+const HTML = new Set([
+  'text/html',
+  'application/xhtml+xml',
+]);
 
 export interface FileInfo {
 
@@ -17,11 +23,11 @@ export interface FileInfo {
    */
   size?: number;
 
-  /**
-   * Read the file from a stream.  May be replaced multiple times with
-   * transforms.
-   */
-  stream: Readable;
+  /** Root directory. */
+  dir: string;
+
+  /** Signal to watch for shutdown. */
+  signal?: AbortSignal | null;
 }
 
 const md = markdownit({
@@ -41,6 +47,21 @@ ${clientSrc}
 </script>
 `;
 const clientScriptBuffer = Buffer.from(clientScriptString);
+
+const htmlEntities: {
+  [entity: string]: string;
+} = {
+  '"': '&quot;',
+  "'": '&apos;',
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+};
+function htmlEscape(buf: Buffer): Buffer {
+  return Buffer.from(
+    buf.toString().replace(/["'&<>]/g, c => htmlEntities[c])
+  );
+}
 
 /**
  * Add the client JS onto the end of an HTML stream.
@@ -173,5 +194,83 @@ ${html}
     }
 
     callback();
+  }
+}
+
+export class FilterStream extends Transform {
+  #child: ChildProcessWithoutNullStreams;
+  #cmd: string;
+  #contentType: string;
+  #error = false;
+
+  public constructor(info: FileInfo, cmd: string, contentType: string) {
+    super();
+    // Can't pre-compute the size, since that is only known after conversion
+    info.size = undefined;
+
+    this.#cmd = cmd;
+    this.#contentType = contentType;
+    this.#child = spawn(cmd, [], {
+      shell: true,
+      stdio: 'pipe',
+      cwd: info.dir,
+      signal: info.signal ?? undefined,
+    });
+    this.#child.stdout.on('data', (chunk: Buffer) => {
+      this.push(chunk);
+    });
+    this.#child.stderr.on('data', (chunk: Buffer) => {
+      const html = HTML.has(this.#contentType);
+      if (!this.#error) {
+        // Once anything is written to stderr, switch to error mode.
+        this.#error = true;
+        if (html) {
+          this.push(Buffer.from(`\
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Error in "${this.#cmd}"</title>
+  </head>
+  <body>
+    <pre><code>
+`));
+        }
+      }
+      if (html) {
+        chunk = htmlEscape(chunk);
+      }
+      this.push(chunk);
+    });
+    this.#child.on('error', er => this.destroy(er));
+  }
+
+  public _transform(
+    chunk: Buffer,
+    _encoding: BufferEncoding,
+    callback: TransformCallback
+  ): void {
+    this.#child.stdin.write(chunk, callback);
+  }
+
+  public _flush(callback: TransformCallback): void {
+    this.#child.once('exit', (code, signal) => {
+      if (this.#error) {
+        if (HTML.has(this.#contentType)) {
+          this.push(`\
+    </code></pre>
+  </body>
+</html>
+`);
+        }
+      }
+      if (code) {
+        this.destroy(new Error(`Invalid exit code from "${this.#cmd}": ${code}`));
+      } else if (signal) {
+        this.destroy(new Error(`Died with signal "${this.#cmd}": ${signal}`));
+      } else {
+        callback();
+      }
+    });
+    this.#child.stdin.end();
   }
 }
