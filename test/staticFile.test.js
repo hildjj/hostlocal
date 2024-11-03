@@ -17,7 +17,7 @@ test('staticFile', async() => {
     filter: {
       'text/yaml': ['wc -l', 'text/plain'],
       // Expect error with stderr
-      'application/javascript': ["printf '%<'", 'text/html'],
+      'application/javascript': ["cat > /dev/null && printf '%<'", 'text/html'],
       // This is unstable for a few reasons
       'application/node': ['kill $$', 'text/plain'],
       // Invalid filter

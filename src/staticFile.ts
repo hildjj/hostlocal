@@ -213,7 +213,7 @@ export async function staticFile(
         throw new TypeError(`Invalid filter: ${filter}, expected [cmd, contentType]`);
       }
       const [cmd, newType] = filter;
-      opts.log.debug('Executing %s => %s => %s', mime, cmd, newType);
+      opts.log.debug('Executing %s => "%s" => %s', mime, cmd, newType);
       transforms.push(new FilterStream(info, cmd, newType));
       mime = newType;
       headers['content-type'] = newType;
