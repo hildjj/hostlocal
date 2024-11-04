@@ -1,4 +1,4 @@
-import {AddClient, type FileInfo, FilterStream, MarkdownToHtml} from './html.js';
+import {AddClient, CGI, type FileInfo, MarkdownToHtml} from './html.js';
 import type {Logger} from 'pino';
 import type {RequiredHostOptions} from './opts.js';
 import type {Stats} from 'node:fs';
@@ -160,7 +160,6 @@ export async function staticFile(
       ...state.headers,
       'content-type': mime,
       etag,
-      'date': new Date().toUTCString(),
       'last-modified': new Date(stat.mtime).toUTCString(),
     };
     const inm = parseIfNoneMatch(req.headers['if-none-match']);
@@ -186,11 +185,26 @@ export async function staticFile(
 
     const info: FileInfo = {
       file,
-      pathname,
+      url,
+      headers,
       size: stat.size,
       signal: opts.signal,
       dir: opts.dir,
+      log: opts.log,
     };
+
+    const cgi = opts.CGI[mime];
+    if (cgi) {
+      fh.close();
+      opts.log.debug('Executing %s => "%s"', mime, cgi);
+      const c = new CGI(req, cgi, info);
+      c.on('headers', () => {
+        res.writeHead(OK, info.headers);
+        c.resume();
+      });
+      pipeline(c, res, __debugError.bind(null, opts.log));
+      return OK;
+    }
 
     const transforms: (
       NodeJS.ReadableStream |
@@ -205,18 +219,6 @@ export async function staticFile(
     }
     if (opts.script && (mime === 'text/html')) {
       transforms.push(new AddClient(info));
-    }
-    const filter = opts.filter[mime];
-    if (filter) {
-      if (!Array.isArray(filter) || filter.length !== 2) {
-        await fh.close();
-        throw new TypeError(`Invalid filter: ${filter}, expected [cmd, contentType]`);
-      }
-      const [cmd, newType] = filter;
-      opts.log.debug('Executing %s => "%s" => %s', mime, cmd, newType);
-      transforms.push(new FilterStream(info, cmd, newType));
-      mime = newType;
-      headers['content-type'] = newType;
     }
 
     if (info.size) {

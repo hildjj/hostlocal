@@ -2,11 +2,16 @@ import {__debugError, staticFile} from '../lib/staticFile.js';
 import {name, version} from '../lib/version.js';
 import assert from 'node:assert';
 import chokidar from 'chokidar';
+import {fileURLToPath} from 'node:url';
 import fs from 'node:fs/promises';
 import httpMocks from 'node-mocks-http';
 import {normalizeOptions} from '../lib/opts.js';
 // eslint-disable-next-line n/no-unsupported-features/node-builtins
 import test from 'node:test';
+import {types} from 'mime-types';
+
+types.crlf = 'application/x-hostlocal-crlf';
+const CHUNKS = fileURLToPath(new URL('./fixtures/chunks.js', import.meta.url));
 
 test('staticFile', async() => {
   const opts = await normalizeOptions({
@@ -14,15 +19,8 @@ test('staticFile', async() => {
     rawMarkdown: true,
     index: ['__DOES_NOT_EXIST__', 'src', 'index.html', 'index.htm', 'README.md'],
     logLevel: 10,
-    filter: {
-      'text/yaml': ['wc -l', 'text/plain'],
-      // Expect error with stderr
-      'application/javascript': ["cat > /dev/null && printf '%<'", 'text/html'],
-      // This is unstable for a few reasons
-      'application/node': ['kill $$', 'text/plain'],
-      // Invalid filter
-      'application/xml': 'invalid',
-      'text/tab-separated-values': ['___NOT_VALID_SCRIPT_IS_FAIL', 'text/plain'],
+    CGI: {
+      'application/x-hostlocal-crlf': CHUNKS,
     },
   });
   const state = {
@@ -59,19 +57,10 @@ test('staticFile', async() => {
   code = await staticFile(opts, state, ...reqRes('/test/fixtures/foo.unknown-type'));
   assert.equal(code, 200);
 
-  code = await staticFile(opts, state, ...reqRes('/pnpm-lock.yaml'));
-  assert.equal(code, 200);
+  code = await staticFile(opts, state, ...reqRes('/src/'));
+  assert.equal(code, 404);
 
-  code = await staticFile(opts, state, ...reqRes('/eslint.config.js'));
-  assert.equal(code, 200);
-
-  code = await staticFile(opts, state, ...reqRes('/typedoc.config.cjs'));
-  assert.equal(code, 200);
-
-  code = await staticFile(opts, state, ...reqRes('/test/fixtures/test.xml'));
-  assert.equal(code, 500);
-
-  code = await staticFile(opts, state, ...reqRes('/test/fixtures/test.tsv'));
+  code = await staticFile(opts, state, ...reqRes('/test/fixtures/cgi.crlf'));
   assert.equal(code, 200);
 
   code = await staticFile(opts, state, ...reqRes('/docs'));

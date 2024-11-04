@@ -87,7 +87,7 @@ export default {
   config: '.hostlocal.js',
   dir: process.cwd(),
   exec: 'npm run build',
-  filter: {},
+  CGI: {},
   glob: [],
   headers: {},
   host: 'localhost',
@@ -111,18 +111,17 @@ Command-line options take precedence over these.  Most of these match their
 command line options for semantics.  Others:
 
 - **dir**: Serve this directory (tied to optional directory in CLI).
-- **filter**: Object containing a map from original mime type to
-  `[command, newMimeType]` tuples.  The command is any shell command that takes
-  original source on stdin, and emits new source on stdout that should have the
-  given newMimeType.  **NOTE:** This feature has a high probability of generating
-  a security issue when you misconfigure it and allow external access.
-  This is an example that might work sometimes, but would be catastrophic with
-  untrusted inputs:
+- **CGI**: Object containing a map from original mime type to `command`.  The
+  command is any shell command that emits at least a content-type header with
+  string CR/LF in the header.  **NOTE:** This feature has a high probability
+  of generating a security issue when you misconfigure it and allow external
+  access. This is an example that might work sometimes, but would be
+  catastrophic with untrusted inputs:
 
 ```json
 {
-  "filter": {
-    "application/x-httpd-php": ["php", "text/html"],
+  "CGI": {
+    "application/x-httpd-php": "php-cgi",
   }
 }
 ```

@@ -1,3 +1,4 @@
+*.crlf text eol=crlf
 *.js text eol=lf
 *.cjs text eol=lf
 *.mjs text eol=lf

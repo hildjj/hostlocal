@@ -1,13 +1,11 @@
 import {type ChildProcessWithoutNullStreams, spawn} from 'node:child_process';
-import {Transform, type TransformCallback} from 'node:stream';
+import {Readable, Transform, type TransformCallback} from 'node:stream';
+import {name, version} from './version.js';
 import {Buffer} from 'node:buffer';
+import type {Logger} from 'pino';
 import fs from 'node:fs/promises';
+import type http2 from 'node:http2';
 import markdownit from 'markdown-it';
-
-const HTML = new Set([
-  'text/html',
-  'application/xhtml+xml',
-]);
 
 export interface FileInfo {
 
@@ -15,7 +13,7 @@ export interface FileInfo {
   file: string;
 
   /** Request URL path portion. */
-  pathname: string;
+  url: URL;
 
   /**
    * Currently-know content-length for the file.
@@ -28,6 +26,11 @@ export interface FileInfo {
 
   /** Signal to watch for shutdown. */
   signal?: AbortSignal | null;
+
+  /** Modifiable set of headers for response. */
+  headers: http2.OutgoingHttpHeaders;
+
+  log: Logger;
 }
 
 const md = markdownit({
@@ -47,21 +50,6 @@ ${clientSrc}
 </script>
 `;
 const clientScriptBuffer = Buffer.from(clientScriptString);
-
-const htmlEntities: {
-  [entity: string]: string;
-} = {
-  '"': '&quot;',
-  "'": '&apos;',
-  '&': '&amp;',
-  '<': '&lt;',
-  '>': '&gt;',
-};
-function htmlEscape(buf: Buffer): Buffer {
-  return Buffer.from(
-    buf.toString().replace(/["'&<>]/g, c => htmlEntities[c])
-  );
-}
 
 /**
  * Add the client JS onto the end of an HTML stream.
@@ -162,7 +150,7 @@ export class MarkdownToHtml extends Transform {
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>${this.#info.pathname}</title>
+  <title>${this.#info.url.pathname}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.7.0/github-markdown-dark.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
@@ -197,80 +185,143 @@ ${html}
   }
 }
 
-export class FilterStream extends Transform {
+enum ParseState {
+  LINE_START = 0,
+  VALUE = 1,
+  NL = 2,
+  CONTENT = 3,
+}
+
+/* eslint-disable @typescript-eslint/prefer-literal-enum-member */
+enum Char {
+  COLON = ':'.codePointAt(0) as number,
+  CR = '\r'.codePointAt(0) as number,
+  NL = '\n'.codePointAt(0) as number,
+}
+/* eslint-enable @typescript-eslint/prefer-literal-enum-member */
+
+export class CGI extends Readable {
   #child: ChildProcessWithoutNullStreams;
-  #cmd: string;
-  #contentType: string;
-  #error = false;
+  #state: ParseState = ParseState.LINE_START;
+  #headerName: Buffer[] = [];
+  #headerValue: Buffer[] = [];
+  #headers: http2.OutgoingHttpHeaders;
 
-  public constructor(info: FileInfo, cmd: string, contentType: string) {
+  public constructor(
+    req: http2.Http2ServerRequest | null,
+    bin: string,
+    info: FileInfo,
+    ...args: string[]
+  ) {
     super();
-    // Can't pre-compute the size, since that is only known after conversion
+    this.#headers = info.headers;
     info.size = undefined;
-
-    this.#cmd = cmd;
-    this.#contentType = contentType;
-    this.#child = spawn(cmd, [], {
-      shell: true,
+    this.#child = spawn(bin, [info.file, ...args], {
       stdio: 'pipe',
-      cwd: info.dir,
       signal: info.signal ?? undefined,
+      env: {
+        ...process.env,
+        DOCUMENT_ROOT: info.dir,
+        GATEWAY_INTERFACE: 'CGI/1.1',
+        HTTPS: 'on',
+        PATH_INFO: info.url.pathname,
+        PATH_TRANSLATED: info.file,
+        QUERY_STRING: info.url.search.slice(1), // No "?"
+        REDIRECT_STATUS: '200', // For php-cgi.  This is likely a problem.
+        REMOTE_ADDR: req?.socket?.remoteAddress,
+        REQUEST_METHOD: req?.method,
+        SERVER_NAME: info.url.hostname,
+        SERVER_PORT: info.url.port,
+        SERVER_PROTOCOL: `HTTP/${req?.httpVersion || 1.1}`,
+        SERVER_SOFTWARE: `${name} ${version}`,
+      },
     });
-    this.#child.stdout.on('data', (chunk: Buffer) => {
-      this.push(chunk);
-    });
-    this.#child.stderr.on('data', (chunk: Buffer) => {
-      const html = HTML.has(this.#contentType);
-      if (!this.#error) {
-        // Once anything is written to stderr, switch to error mode.
-        this.#error = true;
-        if (html) {
-          this.push(Buffer.from(`\
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>Error in "${this.#cmd}"</title>
-  </head>
-  <body>
-    <pre><code>
-`));
-        }
+    this.#child.stdout.on('data', buf => this.#parse(buf));
+    this.#child.stderr.on('data', buf => info.log.debug('CGI: %s', buf));
+    this.#child.on('exit', (code, signal) => {
+      if (code) {
+        this.destroy(new Error(`Invalid exit code from "${bin}": ${code}`));
+      } else if (signal) {
+        this.destroy(new Error(`"${bin}" received signal: ${signal}`));
+      } else {
+        this.push(null);
       }
-      if (html) {
-        chunk = htmlEscape(chunk);
-      }
-      this.push(chunk);
     });
     this.#child.on('error', er => this.destroy(er));
   }
 
-  public _transform(
-    chunk: Buffer,
-    _encoding: BufferEncoding,
-    callback: TransformCallback
-  ): void {
-    this.#child.stdin.write(chunk, callback);
+  // eslint-disable-next-line @typescript-eslint/class-methods-use-this
+  public _read(_size: number): void {
+    // No-op
   }
 
-  public _flush(callback: TransformCallback): void {
-    this.#child.once('exit', (code, signal) => {
-      if (this.#error) {
-        if (HTML.has(this.#contentType)) {
-          this.push(`\
-    </code></pre>
-  </body>
-</html>
-`);
+  #parse(buf: Buffer): void {
+    const more = (pos: number): void => {
+      const left = buf.subarray(pos + 1);
+      if (left.length > 0) {
+        this.#parse(left);
+      }
+    };
+    switch (this.#state) {
+      case ParseState.LINE_START: {
+        if (buf[0] === Char.CR) {
+          // End of headers
+          this.#state = ParseState.NL;
+          more(0);
+          break;
         }
+        const pos = buf.indexOf(Char.COLON);
+        if (pos === -1) {
+          this.#headerName.push(buf);
+        } else {
+          this.#headerName.push(buf.subarray(0, pos));
+          this.#state = ParseState.VALUE;
+          more(pos);
+        }
+        break;
       }
-      if (code) {
-        this.destroy(new Error(`Invalid exit code from "${this.#cmd}": ${code}`));
-      } else if (signal) {
-        this.destroy(new Error(`Died with signal "${this.#cmd}": ${signal}`));
-      } else {
-        callback();
+      case ParseState.VALUE: {
+        const pos = buf.indexOf(Char.CR);
+        if (pos === -1) {
+          if (buf.indexOf(Char.NL) >= 0) {
+            this.destroy(new Error('Invalid CR/NL in header'));
+          }
+          this.#headerValue.push(buf);
+        } else {
+          this.#headerValue.push(buf.subarray(0, pos));
+          this.#state = ParseState.NL;
+          more(pos);
+        }
+        break;
       }
-    });
-    this.#child.stdin.end();
+      case ParseState.NL:
+        if (buf[0] !== Char.NL) {
+          this.destroy(new Error('Invalid CR/NL in header'));
+        }
+        if (this.#headerName.length > 0) {
+          const nm = Buffer
+            .concat(this.#headerName)
+            .toString()
+            .trim()
+            .toLowerCase();
+          const value = Buffer
+            .concat(this.#headerValue)
+            .toString()
+            .trim();
+          this.#headers[nm] = value;
+          this.#headerName = [];
+          this.#headerValue = [];
+          this.#state = ParseState.LINE_START;
+        } else {
+          this.#state = ParseState.CONTENT;
+          this.pause();
+          this.emit('headers');
+        }
+        more(0);
+        break;
+      case ParseState.CONTENT:
+        this.push(buf);
+        break;
+    }
   }
 }

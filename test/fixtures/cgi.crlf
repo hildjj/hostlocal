@@ -1,0 +1,8 @@
+Content-Type: text/html
+x-foo: bar
+
+<html>
+  <body>
+  hi!
+  </body>
+</html>
