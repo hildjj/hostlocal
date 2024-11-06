@@ -1,4 +1,5 @@
-import {AddClient, CGI, type FileInfo, MarkdownToHtml} from './html.js';
+import {AddClient, type FileInfo, MarkdownToHtml} from './html.js';
+import {CGI} from './cgi.js';
 import type {Logger} from 'pino';
 import type {RequiredHostOptions} from './opts.js';
 import type {Stats} from 'node:fs';
@@ -99,17 +100,6 @@ export async function staticFile(
   }
 
   try {
-    switch (req.method) {
-      case 'GET':
-        break;
-      case 'OPTIONS':
-        return error(NO_CONTENT, '', {allow: 'GET, HEAD, OPTIONS'});
-      case 'HEAD':
-        break;
-      default:
-        return error(METHOD_NOT_ALLOWED, `Method ${req.method} not supported`);
-    }
-
     const url = new URL(req.url, state.baseURL);
     const {pathname} = url;
 
@@ -197,13 +187,27 @@ export async function staticFile(
     if (cgi) {
       fh.close();
       opts.log.debug('Executing %s => "%s"', mime, cgi);
+      const add = new AddClient(info, false);
       const c = new CGI(req, cgi, info);
       c.on('headers', () => {
+        if (info.headers['content-type']?.indexOf('text/html') !== -1) {
+          add.append = true;
+        }
         res.writeHead(OK, info.headers);
-        c.resume();
       });
-      pipeline(c, res, __debugError.bind(null, opts.log));
+      pipeline(req, c, add, res, __debugError.bind(null, opts.log));
       return OK;
+    }
+
+    switch (req.method) {
+      case 'OPTIONS':
+        fh.close();
+        return error(NO_CONTENT, '', {allow: 'GET, HEAD, OPTIONS'});
+      case 'GET':
+        break;
+      default:
+        fh.close();
+        return error(METHOD_NOT_ALLOWED, `Method ${req.method} not supported`);
     }
 
     const transforms: (

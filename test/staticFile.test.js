@@ -45,7 +45,7 @@ test('staticFile', async() => {
   let code = await staticFile(opts, state, ...reqRes('////'));
   assert.equal(code, 500);
 
-  code = await staticFile(opts, state, ...reqRes('/', {method: 'POST'}));
+  code = await staticFile(opts, state, ...reqRes('/', {method: 'DELETE'}));
   assert.equal(code, 405);
 
   code = await staticFile(opts, state, ...reqRes('/'));
@@ -66,7 +66,13 @@ test('staticFile', async() => {
   code = await staticFile(opts, state, ...reqRes('/docs'));
   assert.equal(code, 301);
 
-  state.baseURL.pathname += '/foo';
+  code = await staticFile(opts, state, ...reqRes('/', {
+    method: 'OPTIONS',
+  }));
+  assert.equal(code, 204);
+
+  // ------ MOVE TO /foo as base -----
+  state.baseURL.pathname += 'foo';
   code = await staticFile(opts, state, ...reqRes('/unknown'));
   assert.equal(code, 403);
 
@@ -81,11 +87,6 @@ test('staticFile', async() => {
     },
   }));
   assert.equal(code, 304);
-
-  code = await staticFile(opts, state, ...reqRes('/', {
-    method: 'OPTIONS',
-  }));
-  assert.equal(code, 204);
 
   code = await staticFile(opts, state, ...reqRes('/favicon.ico', {
     method: 'HEAD',
