@@ -16,6 +16,11 @@ export interface HostOptions extends CertOptions {
   /** Command to execute when watch glob matches. */
   exec?: string;
 
+  /** Pass files of these MIME types to a CGI handler on the command line. */
+  CGI?: {
+    [contentType: string]: string;
+  };
+
   /** Watch this glob.  When it changes, execute the exec command. */
   glob?: string[] | null;
 
@@ -74,6 +79,7 @@ export const DEFAULT_HOST_OPTIONS: RequiredHostOptions = {
   config: '.hostlocal.js',
   dir: process.cwd(),
   exec: 'npm run build',
+  CGI: Object.create(null),
   glob: [],
   headers: Object.create(null),
   host: 'localhost',

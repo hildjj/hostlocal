@@ -1,0 +1,8 @@
+// Data Snap v1
+
+exports[`cgi crlf`] = {
+  "data": "\u003Chtml\u003E\r\n  \u003Cbody\u003E\r\n  hi!\r\n  \u003C\u002Fbody\u003E\r\n\u003C\u002Fhtml\u003E\r\n",
+  "meta": {
+    "expires": null
+  }
+}

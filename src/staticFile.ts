@@ -1,4 +1,6 @@
 import {AddClient, type FileInfo, MarkdownToHtml} from './html.js';
+import {CGI} from './cgi.js';
+import type {Logger} from 'pino';
 import type {RequiredHostOptions} from './opts.js';
 import type {Stats} from 'node:fs';
 import type {WatchSet} from './watchSet.js';
@@ -8,6 +10,7 @@ import http2 from 'node:http2';
 import mt from 'mime-types';
 import {parseIfNoneMatch} from './utils.js';
 import path from 'node:path';
+import {pipeline} from 'node:stream';
 
 export interface ServerState {
   base: string;
@@ -55,6 +58,21 @@ async function findExistingFile(
 }
 
 /**
+ * Work-around for timing issue during debugging.  Exported for testing only.
+ *
+ * @param log Logger.
+ * @param error Possibly an error, usually null.
+ */
+export function __debugError(
+  log: Logger,
+  error: NodeJS.ErrnoException | null
+): void {
+  if (error) {
+    log.debug(error.message);
+  }
+}
+
+/**
  * Actually serve the file, if found.
  *
  * @param opts Options.
@@ -82,17 +100,6 @@ export async function staticFile(
   }
 
   try {
-    switch (req.method) {
-      case 'GET':
-        break;
-      case 'OPTIONS':
-        return error(NO_CONTENT, '', {allow: 'GET, HEAD, OPTIONS'});
-      case 'HEAD':
-        break;
-      default:
-        return error(METHOD_NOT_ALLOWED, `Method ${req.method} not supported`);
-    }
-
     const url = new URL(req.url, state.baseURL);
     const {pathname} = url;
 
@@ -143,7 +150,6 @@ export async function staticFile(
       ...state.headers,
       'content-type': mime,
       etag,
-      'date': new Date().toUTCString(),
       'last-modified': new Date(stat.mtime).toUTCString(),
     };
     const inm = parseIfNoneMatch(req.headers['if-none-match']);
@@ -169,31 +175,72 @@ export async function staticFile(
 
     const info: FileInfo = {
       file,
-      pathname,
+      url,
+      headers,
       size: stat.size,
-      stream: fh.createReadStream(),
+      signal: opts.signal,
+      dir: opts.dir,
+      log: opts.log,
     };
 
+    const cgi = opts.CGI[mime];
+    if (cgi) {
+      fh.close();
+      opts.log.debug('Executing %s => "%s"', mime, cgi);
+      const add = new AddClient(info, false);
+      const c = new CGI(req, cgi, info);
+      c.on('headers', () => {
+        if (info.headers['content-type']?.indexOf('text/html') !== -1) {
+          add.append = true;
+        }
+        res.writeHead(OK, info.headers);
+      });
+      pipeline(req, c, add, res, __debugError.bind(null, opts.log));
+      return OK;
+    }
+
+    switch (req.method) {
+      case 'OPTIONS':
+        fh.close();
+        return error(NO_CONTENT, '', {allow: 'GET, HEAD, OPTIONS'});
+      case 'GET':
+        break;
+      default:
+        fh.close();
+        return error(METHOD_NOT_ALLOWED, `Method ${req.method} not supported`);
+    }
+
+    const transforms: (
+      NodeJS.ReadableStream |
+      NodeJS.WritableStream |
+      NodeJS.ReadWriteStream
+    )[] = [];
+
     if ((mime === 'text/markdown') && !opts.rawMarkdown) {
-      info.stream = info.stream.pipe(new MarkdownToHtml(info));
+      transforms.push(new MarkdownToHtml(info));
       mime = 'text/html';
       headers['content-type'] = mime;
     }
     if (opts.script && (mime === 'text/html')) {
-      info.stream = info.stream.pipe(new AddClient(info));
+      transforms.push(new AddClient(info));
     }
 
     if (info.size) {
       headers['content-length'] = info.size; // Otherwise chunked
     }
+    transforms.unshift(fh.createReadStream());
+    transforms.push(res);
     res.writeHead(OK, headers);
-    info.stream.pipe(res);
+    // Don't use the promise version of this. The promise will resolve after
+    // the stream ends, which means it will dangle in the tests.
+    pipeline(transforms, __debugError.bind(null, opts.log));
     return OK;
   } catch (e) {
     const err = e as NodeJS.ErrnoException;
     if (err.code === 'ENOENT') {
       return error(NOT_FOUND, `No such file: "${req.url}"`);
     }
+    opts.log.warn('Uncaught error: %s', err.message);
     return error(INTERNAL_SERVER_ERROR, err.message);
   }
 }

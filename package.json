@@ -36,7 +36,7 @@
     "clean": "rimraf coverage docs lib playwright-report test-results",
     "dev": "node bin/hostlocal.js -c .hostCoverage.js",
     "lint": "eslint .",
-    "snaps": "UPDATE_SNAPSHOT=1 node --test test/cli.test.js",
+    "snaps": "UPDATE_SNAPSHOT=1 node --test test/*.test.js",
     "spotcheck": "node --test test/*.test.js",
     "precoverage": "tsc --inlineSourceMap",
     "coverage": "npm run spotcheck && playwright test",
@@ -76,12 +76,14 @@
     "eslint-plugin-jsdoc": "50.4.3",
     "eslint-plugin-markdown": "5.1.0",
     "node-mocks-http": "1.16.1",
+    "nofilter": "5.0.0",
     "package-extract": "2.3.0",
     "rimraf": "6.0.1",
     "snappy-snaps": "1.1.0",
     "typedoc": "0.26.10",
     "typescript": "5.6.3",
-    "typescript-eslint": "8.12.2"
+    "typescript-eslint": "8.12.2",
+    "wtfnode": "0.9.3"
   },
   "packageManager": "pnpm@9.12.3",
   "engines": {

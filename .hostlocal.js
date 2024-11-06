@@ -11,4 +11,7 @@ export default {
     'Cross-Origin-Embedder-Policy': 'require-corp',
   },
   caSubject: '/C=US/ST=Colorado/L=Denver/CN=_HostLocal-hostlocal',
+  CGI: {
+    'application/x-httpd-php': '/opt/homebrew/bin/php-cgi',
+  },
 };

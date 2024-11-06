@@ -1,6 +1,8 @@
-import {Readable, Transform, type TransformCallback} from 'node:stream';
+import {Transform, type TransformCallback} from 'node:stream';
 import {Buffer} from 'node:buffer';
+import type {Logger} from 'pino';
 import fs from 'node:fs/promises';
+import type http2 from 'node:http2';
 import markdownit from 'markdown-it';
 
 export interface FileInfo {
@@ -9,7 +11,7 @@ export interface FileInfo {
   file: string;
 
   /** Request URL path portion. */
-  pathname: string;
+  url: URL;
 
   /**
    * Currently-know content-length for the file.
@@ -17,11 +19,16 @@ export interface FileInfo {
    */
   size?: number;
 
-  /**
-   * Read the file from a stream.  May be replaced multiple times with
-   * transforms.
-   */
-  stream: Readable;
+  /** Root directory. */
+  dir: string;
+
+  /** Signal to watch for shutdown. */
+  signal?: AbortSignal | null;
+
+  /** Modifiable set of headers for response. */
+  headers: http2.OutgoingHttpHeaders;
+
+  log: Logger;
 }
 
 const md = markdownit({
@@ -48,11 +55,22 @@ const clientScriptBuffer = Buffer.from(clientScriptString);
  * the script.
  */
 export class AddClient extends Transform {
-  public constructor(info: FileInfo) {
+  #append: boolean;
+
+  public constructor(info: FileInfo, append = true) {
     super();
+    this.#append = append;
     if (info.size) {
       info.size += clientScriptBuffer.length;
     }
+  }
+
+  public get append(): boolean {
+    return this.#append;
+  }
+
+  public set append(val: boolean) {
+    this.#append = val;
   }
 
   public _transform(
@@ -65,7 +83,9 @@ export class AddClient extends Transform {
   }
 
   public _flush(callback: TransformCallback): void {
-    this.push(clientScriptBuffer);
+    if (this.#append) {
+      this.push(clientScriptBuffer);
+    }
     callback();
   }
 }
@@ -141,7 +161,7 @@ export class MarkdownToHtml extends Transform {
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>${this.#info.pathname}</title>
+  <title>${this.#info.url.pathname}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.7.0/github-markdown-dark.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
