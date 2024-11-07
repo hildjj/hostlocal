@@ -7,7 +7,7 @@ import rs from 'jsrsasign';
 const HOUR_ms = 60 * 60 * 1000;
 const DAY_ms = 24 * HOUR_ms;
 const CA_FILE = '_CA';
-const CA_SUBJECT = '/C=US/ST=Colorado/L=Denver/CN=HostLocal-Root-CA';
+const CA_SUBJECT = '/C=US/ST=Colorado/L=Denver/O=_HostLocal/CN=HostLocal-Root-CA';
 const KEYCHAIN_SERVICE = 'com.github.hildjj.HostLocal';
 
 export interface CertOptions extends LogOptions {
