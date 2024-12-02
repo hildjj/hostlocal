@@ -121,7 +121,7 @@ command line options for semantics.  Others:
 ```json
 {
   "CGI": {
-    "application/x-httpd-php": "php-cgi",
+    "application/x-httpd-php": "php-cgi"
   }
 }
 ```
