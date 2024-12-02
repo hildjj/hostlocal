@@ -8,7 +8,6 @@ import {fileURLToPath} from 'node:url';
 import fs from 'node:fs/promises';
 import http2 from 'node:http2';
 import mt from 'mime-types';
-// eslint-disable-next-line n/no-missing-import
 import {parse} from '@cto.af/http-headers';
 import path from 'node:path';
 import {pipeline} from 'node:stream';
