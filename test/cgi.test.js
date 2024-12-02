@@ -7,9 +7,9 @@ import snap from 'snappy-snaps';
 // eslint-disable-next-line n/no-unsupported-features/node-builtins
 import test from 'node:test';
 
+const CHUNKS = fileURLToPath(new URL('./fixtures/chunks.js', import.meta.url));
 const CRLF_FILE = fileURLToPath(new URL('./fixtures/cgi.crlf', import.meta.url));
 const LF_FILE = fileURLToPath(new URL('./fixtures/cgi.lf', import.meta.url));
-const CHUNKS = fileURLToPath(new URL('./fixtures/chunks.js', import.meta.url));
 
 class Source extends Readable {
   constructor(...str) {

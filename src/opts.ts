@@ -139,7 +139,16 @@ export async function normalizeOptions(
   if (rest.prefix) {
     // Ensure rest.prefix starts with / and does not end with /
     // eslint-disable-next-line prefer-template
-    rest.prefix = '/' + rest.prefix.trim().replaceAll(/^[/.]+|\/+$/g, '');
+    rest.prefix = '/' + rest.prefix.trim().replace(/^[/.]+/, '');
+
+    let last = rest.prefix.length;
+    for (let i = last - 1; i >= 0; i--) {
+      if (rest.prefix[i] !== '/') {
+        break;
+      }
+      last = i;
+    }
+    rest.prefix = rest.prefix.slice(0, last);
   } else {
     rest.prefix = '';
   }

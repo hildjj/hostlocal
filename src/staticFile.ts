@@ -8,7 +8,7 @@ import {fileURLToPath} from 'node:url';
 import fs from 'node:fs/promises';
 import http2 from 'node:http2';
 import mt from 'mime-types';
-import {parseIfNoneMatch} from './utils.js';
+import {parse} from '@cto.af/http-headers';
 import path from 'node:path';
 import {pipeline} from 'node:stream';
 
@@ -23,6 +23,7 @@ const FAVICON = 'favicon.ico';
 const S_FAVICON = `/${FAVICON}`;
 const assets = new URL('../assets/', import.meta.url);
 const F_FAVICON = fileURLToPath(new URL(FAVICON, assets));
+const IS_HTML = /\btext\/html\b/;
 
 export const {
   HTTP_STATUS_FORBIDDEN: FORBIDDEN,
@@ -152,7 +153,8 @@ export async function staticFile(
       etag,
       'last-modified': new Date(stat.mtime).toUTCString(),
     };
-    const inm = parseIfNoneMatch(req.headers['if-none-match']);
+    const hinm = req.headers['if-none-match'];
+    const inm = hinm ? new Set(parse(hinm, {startRule: 'If_None_Match'}).etags) : null;
     if (inm) {
       if (inm.has(etag)) {
         fh.close();
@@ -190,7 +192,12 @@ export async function staticFile(
       const add = new AddClient(info, false);
       const c = new CGI(req, cgi, info);
       c.on('headers', () => {
-        if (info.headers['content-type']?.indexOf('text/html') !== -1) {
+        let ct = info.headers['content-type'];
+        if (!ct) {
+          ct = 'application/text';
+          info.headers['content-type'] = ct;
+        }
+        if (IS_HTML.test(ct)) {
           add.append = true;
         }
         res.writeHead(OK, info.headers);
@@ -221,7 +228,7 @@ export async function staticFile(
       mime = 'text/html';
       headers['content-type'] = mime;
     }
-    if (opts.script && (mime === 'text/html')) {
+    if (opts.script && IS_HTML.test(mime)) {
       transforms.push(new AddClient(info));
     }
 
