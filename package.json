@@ -51,12 +51,10 @@
   },
   "dependencies": {
     "@cto.af/http-headers": "0.1.0",
-    "bufferutil": "4.0.8",
     "chokidar": "4.0.1",
     "commander": "12.1.0",
     "fast-glob": "3.3.2",
     "jsrsasign": "11.1.0",
-    "keytar": "7.9.0",
     "markdown-it": "14.1.0",
     "mime-types": "2.1.35",
     "open": "10.1.0",
@@ -77,22 +75,14 @@
     "eslint-plugin-jsdoc": "50.6.0",
     "eslint-plugin-markdown": "5.1.0",
     "node-mocks-http": "1.16.1",
-    "nofilter": "5.0.0",
     "package-extract": "2.3.0",
     "rimraf": "6.0.1",
     "snappy-snaps": "1.1.0",
     "typedoc": "0.27.2",
     "typescript": "5.7.2",
-    "typescript-eslint": "8.17.0",
-    "wtfnode": "0.9.4"
+    "typescript-eslint": "8.17.0"
   },
   "packageManager": "pnpm@9.14.4",
-  "pnpm": {
-    "overrides": {
-      "@eslint/plugin-kit": "^0.2.3",
-      "cross-spawn": "^7.0.6"
-    }
-  },
   "engines": {
     "node": ">=18.8"
   }
