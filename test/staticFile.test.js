@@ -63,6 +63,9 @@ test('staticFile', async() => {
   code = await staticFile(opts, state, ...reqRes('/test/fixtures/cgi.crlf'));
   assert.equal(code, 200);
 
+  code = await staticFile(opts, state, ...reqRes('/test/fixtures/no-content-type.crlf'));
+  assert.equal(code, 200);
+
   code = await staticFile(opts, state, ...reqRes('/docs'));
   assert.equal(code, 301);
 

@@ -74,6 +74,9 @@ export class CGI extends Transform {
       }
     });
     this.#child.on('error', er => this.destroy(er));
+
+    // Needs to be replaced by CGI.  Default added back in staticFile.
+    delete this.#headers['content-type'];
   }
 
   public _transform(

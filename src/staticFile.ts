@@ -193,7 +193,12 @@ export async function staticFile(
       const add = new AddClient(info, false);
       const c = new CGI(req, cgi, info);
       c.on('headers', () => {
-        if (IS_HTML.test(info.headers['content-type'] ?? '')) {
+        let ct = info.headers['content-type'];
+        if (!ct) {
+          ct = 'application/text';
+          info.headers['content-type'] = ct;
+        }
+        if (IS_HTML.test(ct)) {
           add.append = true;
         }
         res.writeHead(OK, info.headers);
