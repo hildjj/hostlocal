@@ -14,6 +14,9 @@ test('help', async() => {
     writeErr(str) {
       stderr += str;
     },
+    outputError(str, write) {
+      write(str);
+    },
   };
   await assert.rejects(() => cli(['node', 'hostlocal', '-h'], out));
   assert.deepEqual(stdout, await snap('help stdout', stdout));
