@@ -1,9 +1,10 @@
-import {type CertOptions, DEFAULT_CERT_OPTIONS} from './cert.js';
+import {type CertOptions, DEFAULT_CERT_OPTIONS} from '@cto.af/ca';
 import {OutgoingHttpHeaders} from 'node:http2';
 import fs from 'node:fs/promises';
+import {getLog} from '@cto.af/log';
+import open from 'open';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
-import {setLogLevel} from './log.js';
 
 export interface HostOptions extends CertOptions {
 
@@ -47,6 +48,9 @@ export interface HostOptions extends CertOptions {
   /** Path to open. */
   open?: string | boolean;
 
+  /** For testing only. */
+  openFn?: typeof open;
+
   /** TCP Port to listen on. */
   port?: number;
 
@@ -87,6 +91,7 @@ export const DEFAULT_HOST_OPTIONS: RequiredHostOptions = {
   initial: false,
   ipv6: false,
   open: '.',
+  openFn: open,
   port: 8111,
   prefix: '',
   rawMarkdown: false,
@@ -158,7 +163,10 @@ export async function normalizeOptions(
   }
   rest.dir = await fs.realpath(rest.dir);
 
-  setLogLevel(rest, {
+  rest.log = getLog({
+    logFile: rest.logFile,
+    logLevel: rest.logLevel,
+  }, {
     host: rest.host,
     port: rest.port,
   });

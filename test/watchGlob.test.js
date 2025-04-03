@@ -3,7 +3,6 @@ import assert from 'node:assert';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-// eslint-disable-next-line n/no-unsupported-features/node-builtins
 import test from 'node:test';
 
 const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'hostlocal-test-watch-'));
