@@ -6,7 +6,6 @@ import {fileURLToPath} from 'node:url';
 import fs from 'node:fs/promises';
 import httpMocks from 'node-mocks-http';
 import {normalizeOptions} from '../lib/opts.js';
-// eslint-disable-next-line n/no-unsupported-features/node-builtins
 import test from 'node:test';
 import {types} from 'mime-types';
 

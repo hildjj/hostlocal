@@ -63,7 +63,7 @@ export class CGI extends Transform {
     this.#child.stdout.on('data', buf => {
       this.#parse(buf);
     });
-    this.#child.stderr.on('data', buf => info.log.debug('CGI: %s', buf));
+    this.#child.stderr.on('data', buf => info.log?.debug('CGI: %s', buf));
     this.#child.on('exit', (code, signal) => {
       if (code) {
         this.destroy(new Error(`Invalid exit code from "${bin}": ${code}`));

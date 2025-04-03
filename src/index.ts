@@ -1,10 +1,9 @@
 import {type HostOptions, normalizeOptions} from './opts.js';
 import {HostLocalServer} from './server.js';
-import {createCert} from './cert.js';
+import {createCert} from '@cto.af/ca';
 
 export type {HostOptions} from './opts.js';
-export type {KeyCert} from './cert.js';
-export type {AnyKey, CertOptions} from './cert.js';
+export type {AnyKey, CertOptions, KeyCert} from '@cto.af/ca';
 
 /**
  * Server a directory via HTTPS.

@@ -1,7 +1,6 @@
 import assert from 'node:assert';
 import {fileURLToPath} from 'node:url';
 import {normalizeOptions} from '../lib/opts.js';
-// eslint-disable-next-line n/no-unsupported-features/node-builtins
 import test from 'node:test';
 
 test('invalid config file', async() => {

@@ -3,7 +3,7 @@ import {type ServerState, staticFile} from './staticFile.js';
 import {name as pkgName, version as pkgVersion} from './version.js';
 import type {Duplex} from 'node:stream';
 import {EventEmitter} from 'node:events';
-import type {KeyCert} from './cert.js';
+import type {KeyCert} from '@cto.af/ca';
 import type {RequiredHostOptions} from './opts.js';
 import type {TLSSocket} from 'node:tls';
 import {WatchGlob} from './watchGlob.js';
@@ -11,7 +11,6 @@ import {WatchSet} from './watchSet.js';
 import {WebSocketServer} from 'ws';
 import http from 'node:http';
 import http2 from 'node:http2';
-import open from 'open';
 import path from 'node:path';
 
 export interface ServerEvents {
@@ -42,15 +41,15 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
     // One minute before certificate goes invalid, shut down.
     const afterTime = cert.notAfter.getTime() - new Date().getTime() - 60000;
     this.#certTimout = setTimeout(() => {
-      this.#opts.log.error(
+      this.#opts.log?.error(
         'Certificate about to be invalid (%s).  Shutting down.',
         cert.notAfter
       );
       this.#ac.abort();
     }, afterTime);
     this.#ac.signal.addEventListener('abort', () => {
-      this.#opts.log.info('Shutting down');
-      this.#opts.log.flush();
+      this.#opts.log?.info('Shutting down');
+      this.#opts.log?.flush();
       clearTimeout(this.#certTimout);
     });
 
@@ -61,7 +60,7 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
         ...this.#opts,
         signal: this.#ac.signal,
       });
-      this.#wg.on('error', er => this.#opts.log.error(er));
+      this.#wg.on('error', er => this.#opts.log?.error(er));
     }
 
     // Watch for files we've served.
@@ -101,20 +100,20 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
       allowHTTP1: true, // Needed to make ws work
     }, async(req, res) => {
       const code = await staticFile(this.#opts, this.#state, req, res);
-      this.#opts.log.info('%s %d %s', req.method, code, req.url);
+      this.#opts.log?.info('%s %d %s', req.method, code, req.url);
     });
 
     // HTTP2 doesn't have closeAllConnections
     this.#server.on('connection', (s: Socket) => {
-      this.#opts.log.trace('Add sock %s:%d', s.remoteAddress, s.remotePort);
+      this.#opts.log?.trace('Add sock %s:%d', s.remoteAddress, s.remotePort);
       this.#socks.add(s);
       s.once('close', () => {
-        this.#opts.log.trace('Remove sock %s:%d', s.remoteAddress, s.remotePort);
+        this.#opts.log?.trace('Remove sock %s:%d', s.remoteAddress, s.remotePort);
         this.#socks.delete(s);
       });
     });
     this.#server.on('error', er => {
-      this.#opts.log.fatal(er.message);
+      this.#opts.log?.fatal(er.message);
       this.close();
     });
 
@@ -137,7 +136,7 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
             'Content-Length': 0,
           });
           res.end();
-          this.#opts.log.info('Redirecting HTTP to HTTPS');
+          this.#opts.log?.info('Redirecting HTTP to HTTPS');
         }
       }
     });
@@ -164,7 +163,7 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
       this.#wss = new WebSocketServer({server: this.#server});
 
       this.#wss.on('connection', ws => {
-        ws.on('error', (er: Error) => this.#opts.log.error(er));
+        ws.on('error', (er: Error) => this.#opts.log?.error(er));
         ws.on('message', msg => {
           const jmsg = JSON.parse(msg.toString());
           this.emit('wsmessage', jmsg);
@@ -172,7 +171,7 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
             case 'shutdown':
               // Completely insecure when shutTimes < Infinity.
               // Only set shutTimes when testing.
-              this.#opts.log.debug('Shutdown request %d', this.#opts.shutTimes);
+              this.#opts.log?.debug('Shutdown request %d', this.#opts.shutTimes);
               ws.close();
               if (--this.#opts.shutTimes <= 0) {
                 this.close();
@@ -182,13 +181,13 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
         });
       });
       this.#wss.on('error', er => {
-        this.#opts.log.fatal(er.message);
+        this.#opts.log?.fatal(er.message);
       });
-      this.#opts.log.info('Listening on: %s', base);
+      this.#opts.log?.info('Listening on: %s', base);
       if (this.#opts.open && (typeof this.#opts.open === 'string')) {
         const u = new URL(this.#opts.open, base).toString();
         // Ignore promise
-        open(u).catch((er: unknown) => this.#opts.log.error(er));
+        this.#opts.openFn(u).catch((er: unknown) => this.#opts.log?.error(er));
       }
       this.emit('listen', base);
     });

@@ -1,6 +1,6 @@
 import {Transform, type TransformCallback} from 'node:stream';
 import {Buffer} from 'node:buffer';
-import type {Logger} from 'pino';
+import type {Logger} from '@cto.af/log';
 import fs from 'node:fs/promises';
 import type http2 from 'node:http2';
 import markdownit from 'markdown-it';
@@ -28,7 +28,7 @@ export interface FileInfo {
   /** Modifiable set of headers for response. */
   headers: http2.OutgoingHttpHeaders;
 
-  log: Logger;
+  log?: Logger | null;
 }
 
 const md = markdownit({

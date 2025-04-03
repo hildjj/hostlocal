@@ -4,7 +4,6 @@ import {CGI} from '../lib/cgi.js';
 import assert from 'node:assert';
 import {fileURLToPath} from 'node:url';
 import snap from 'snappy-snaps';
-// eslint-disable-next-line n/no-unsupported-features/node-builtins
 import test from 'node:test';
 
 const CHUNKS = fileURLToPath(new URL('./fixtures/chunks.js', import.meta.url));

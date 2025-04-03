@@ -1,6 +1,6 @@
 import {AddClient, type FileInfo, MarkdownToHtml} from './html.js';
 import {CGI} from './cgi.js';
-import type {Logger} from 'pino';
+import type {Logger} from '@cto.af/log';
 import type {RequiredHostOptions} from './opts.js';
 import type {Stats} from 'node:fs';
 import type {WatchSet} from './watchSet.js';
@@ -65,11 +65,11 @@ async function findExistingFile(
  * @param error Possibly an error, usually null.
  */
 export function __debugError(
-  log: Logger,
+  log: Logger | null,
   error: NodeJS.ErrnoException | null
 ): void {
   if (error) {
-    log.debug(error.message);
+    log?.debug(error.message);
   }
 }
 
@@ -188,7 +188,7 @@ export async function staticFile(
     const cgi = opts.CGI[mime];
     if (cgi) {
       fh.close();
-      opts.log.debug('Executing %s => "%s"', mime, cgi);
+      opts.log?.debug('Executing %s => "%s"', mime, cgi);
       const add = new AddClient(info, false);
       const c = new CGI(req, cgi, info);
       c.on('headers', () => {
@@ -247,7 +247,7 @@ export async function staticFile(
     if (err.code === 'ENOENT') {
       return error(NOT_FOUND, `No such file: "${req.url}"`);
     }
-    opts.log.warn('Uncaught error: %s', err.message);
+    opts.log?.warn('Uncaught error: %s', err.message);
     return error(INTERNAL_SERVER_ERROR, err.message);
   }
 }
