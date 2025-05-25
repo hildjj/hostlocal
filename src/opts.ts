@@ -110,7 +110,7 @@ export const DEFAULT_HOST_OPTIONS: RequiredHostOptions = {
  * @returns Normalized options.
  */
 export async function normalizeOptions(
-  options: HostOptions,
+  options: HostOptions = {},
   root?: string | null
 ): Promise<RequiredHostOptions> {
   let config: HostOptions = Object.create(null);

@@ -83,7 +83,8 @@ export async function cli(
       if (opts.quiet || opts.verbose) {
         opts.logLevel = opts.verbose - opts.quiet;
       }
-      return hostLocal(directory, opts).then(s => s.start());
+      return hostLocal(directory, opts).then(s => s.start())
+        .then(() => undefined);
     })
     .parseAsync(args);
 }
