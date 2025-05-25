@@ -144,8 +144,32 @@ Example:
 import {hostLocal} from 'hostlocal';
 
 const server = await hostLocal({port: 8111});
-server.on('listen', baseURL => console.log(baseURL.toString()));
-await server.start();
+const url = await server.start();
+```
+
+## Unit testing
+
+For unit testing, you usually want to start up the server, wait for it to
+start, then start making connections to it.  In order for those connections to
+succeed, you need to trust the CA cert that got generated along the way.  This
+currently requires a hack, but see
+[Node.js Issue #27079](https://github.com/nodejs/node/issues/27079) for
+discussion of the right ways for this to be done in the future.  Here is some
+code that works as of Node v24.1.0:
+
+```js
+import {hostLocal} from 'hostlocal';
+
+const server = await hostLocal({port: 0});
+const url = await server.start();
+
+const origCsC = tls.createSecureContext;
+// Use mockMethod if you want to reset this later.
+tls.createSecureContext = options => {
+  const secureContext = origCsC(options);
+  secureContext.context.addCACert(server.caCert);
+  return secureContext;
+};
 ```
 
 ---

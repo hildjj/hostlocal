@@ -12,11 +12,13 @@ import {WebSocketServer} from 'ws';
 import http from 'node:http';
 import http2 from 'node:http2';
 import path from 'node:path';
+import {promiseWithResolvers} from '@cto.af/utils';
 
 export interface ServerEvents {
   close: [];
   listen: [url: URL];
   wsmessage: [json: any];
+  error: [error: Error];
 }
 
 export class HostLocalServer extends EventEmitter<ServerEvents> {
@@ -60,7 +62,10 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
         ...this.#opts,
         signal: this.#ac.signal,
       });
-      this.#wg.on('error', er => this.#opts.log?.error(er));
+      this.#wg.on('error', (er: unknown) => {
+        this.emit('error', er as Error);
+        this.#opts.log?.error(er);
+      });
     }
 
     // Watch for files we've served.
@@ -89,10 +94,26 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
     };
   }
 
-  public async start(): Promise<void> {
+  public get baseURL(): string {
+    // Do not return URL so that it can't be modified by receiver.
+    return this.#state.baseURL.toString();
+  }
+
+  public get caCert(): string | undefined {
+    return this.#cert?.ca?.cert;
+  }
+
+  public async start(): Promise<URL> {
     // This will run the exec script once before we start serving if initial
     // is set.
     await this.#wg?.start();
+
+    // Switch to withResolvers when node 22 is required.
+    const {promise, resolve, reject} = promiseWithResolvers<URL>();
+    this.once('error', reject);
+    this.once('listen', () => {
+      this.off('error', reject);
+    });
 
     this.#server = http2.createSecureServer({
       key: this.#cert.key,
@@ -113,6 +134,7 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
       });
     });
     this.#server.on('error', er => {
+      this.emit('error', er);
       this.#opts.log?.fatal(er.message);
       this.close();
     });
@@ -163,7 +185,10 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
       this.#wss = new WebSocketServer({server: this.#server});
 
       this.#wss.on('connection', ws => {
-        ws.on('error', (er: Error) => this.#opts.log?.error(er));
+        ws.on('error', (er: Error) => {
+          this.emit('error', er);
+          this.#opts.log?.error(er);
+        });
         ws.on('message', msg => {
           const jmsg = JSON.parse(msg.toString());
           this.emit('wsmessage', jmsg);
@@ -181,6 +206,7 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
         });
       });
       this.#wss.on('error', er => {
+        this.emit('error', er);
         this.#opts.log?.fatal(er.message);
       });
       this.#opts.log?.info('Listening on: %s', base);
@@ -189,14 +215,22 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
         // Ignore promise
         this.#opts.openFn(u).catch((er: unknown) => this.#opts.log?.error(er));
       }
-      this.emit('listen', base);
+      // Copy, so it's not modifiable.
+      const b = new URL(base);
+      resolve(b);
+      this.emit('listen', b);
     });
 
     this.#server.on('close', () => this.emit('close'));
+    return promise;
   }
 
-  public close(): void {
-    this.#ac.abort();
+  public close(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.once('close', resolve);
+      this.once('error', reject);
+      this.#ac.abort();
+    });
   }
 
   #base(): URL {
@@ -204,7 +238,7 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
       `[${this.#opts.host}]` :
       this.#opts.host;
     const {port, prefix} = this.#opts;
-    return new URL(`https://${urlHost}:${port}${prefix}/`);
+    return new URL(prefix, `https://${urlHost}:${port}/`);
   }
 
   #notify(urls: string[]): void {
