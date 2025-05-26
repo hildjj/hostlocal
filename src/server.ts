@@ -234,10 +234,12 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
   }
 
   #base(): URL {
-    const urlHost = this.#opts.host.includes(':') ?
-      `[${this.#opts.host}]` :
-      this.#opts.host;
-    const {port, prefix} = this.#opts;
+    const {host, port} = this.#opts;
+    const urlHost = host.includes(':') ? `[${host}]` : host;
+    let {prefix} = this.#opts;
+    if (!prefix.endsWith('/')) {
+      prefix += '/';
+    }
     return new URL(prefix, `https://${urlHost}:${port}/`);
   }
 

@@ -29,6 +29,7 @@ test('hostLocal', async t => {
     port: 9111,
     logLevel: 3,
     signal: ac.signal,
+    prefix: 'foo',
     // Shut the server down when the cert expires.
     notAfterDays: 62 / (24 * 60 * 60), // 60s before is when stop happens.
   });
@@ -45,6 +46,7 @@ test('hostLocal', async t => {
 
   const url = await server.start();
   assert.equal(url.toString(), server.baseURL);
+  assert(url.toString().endsWith('/'));
   const readme = await (await fetch(url)).text();
   assert.match(readme, /^<!DOCTYPE html>/);
 
