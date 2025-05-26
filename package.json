@@ -50,7 +50,7 @@
     "version": "package-extract -so src/version.ts name version && git add src/version.ts"
   },
   "dependencies": {
-    "@cto.af/ca": "1.1.0",
+    "@cto.af/ca": "1.1.1",
     "@cto.af/http-headers": "1.0.0",
     "@cto.af/log": "1.0.0",
     "@cto.af/utils": "1.2.0",

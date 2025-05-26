@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@cto.af/ca':
-        specifier: 1.1.0
-        version: 1.1.0
+        specifier: 1.1.1
+        version: 1.1.1
       '@cto.af/http-headers':
         specifier: 1.0.0
         version: 1.0.0
@@ -106,8 +106,8 @@ packages:
     resolution: {integrity: sha512-6zABk/ECA/QYSCQ1NGiVwwbQerUCZ+TQbp64Q3AgmfNvurHH0j8TtXa1qbShXA6qqkpAj4V5W8pP6mLe1mcMqA==}
     engines: {node: '>=18'}
 
-  '@cto.af/ca@1.1.0':
-    resolution: {integrity: sha512-L/P6LzAYnXTO6xIFJZX9ivKFSpXP6s+wogrd1aJYwcddbzHopsQlIiCtJ4dvAFsa7+XVkU1wXh29I7YL2IyQ+Q==}
+  '@cto.af/ca@1.1.1':
+    resolution: {integrity: sha512-Ldy1H7GyMFXw0DjO93q82Yz2jFfZ/YgxuDdM8qZNHdlxoCMYeCdCpqepcMUgge/tMdXysKmbfM9CItB5fZV8mA==}
     engines: {node: '>=20'}
     hasBin: true
 
@@ -1515,10 +1515,10 @@ snapshots:
 
   '@bcoe/v8-coverage@1.0.2': {}
 
-  '@cto.af/ca@1.1.0':
+  '@cto.af/ca@1.1.1':
     dependencies:
       '@cto.af/log': 1.0.0
-      commander: 13.1.0
+      commander: 14.0.0
       env-paths: 3.0.0
       filenamify: 6.0.0
       jsrsasign: 11.1.0
