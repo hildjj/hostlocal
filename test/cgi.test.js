@@ -73,7 +73,7 @@ function execCGI(bin, file, ...args) {
   });
 }
 
-test('CGI', async() => {
+test('CGI', async () => {
   const {size, headers, headersFired, stdout} =
     await execCGI(CHUNKS, CRLF_FILE);
   assert.equal(headersFired, true);

@@ -9,7 +9,7 @@ import test from 'node:test';
 const bin = fileURLToPath(new URL('../bin/hostlocal.js', import.meta.url));
 const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'hostlocal-test-bin-'));
 
-test.after(async() => {
+test.after(async () => {
   await fs.rm(tmp, {recursive: true, force: true});
 });
 

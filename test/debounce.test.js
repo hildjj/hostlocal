@@ -2,7 +2,7 @@ import {DebounceSet, debounce} from '../lib/debounce.js';
 import assert from 'node:assert';
 import test from 'node:test';
 
-test('debounce', async() => {
+test('debounce', async () => {
   let count = 0;
   await new Promise((resolve, reject) => {
     const deb = debounce(() => {

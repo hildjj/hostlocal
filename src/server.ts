@@ -119,7 +119,7 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
       key: this.#cert.key,
       cert: this.#cert.cert,
       allowHTTP1: true, // Needed to make ws work
-    }, async(req, res) => {
+    }, async (req, res) => {
       const code = await staticFile(this.#opts, this.#state, req, res);
       this.#opts.log?.info('%s %d %s', req.method, code, req.url);
     });

@@ -1,7 +1,7 @@
 import {expect, test} from '@playwright/test';
 import fs from 'node:fs/promises';
 
-test('has title', async({page}) => {
+test('has title', async ({page}) => {
   let response = await page.request.get('test/fixtures/index.html');
   expect(response.status()).toBe(200);
 
