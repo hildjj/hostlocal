@@ -7,11 +7,11 @@ import test from 'node:test';
 
 const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'hostlocal-test-watch-'));
 
-test.after(async() => {
+test.after(async () => {
   await fs.rm(tmp, {recursive: true});
 });
 
-test('watchGlob', async() => {
+test('watchGlob', async () => {
   const newTxt = path.join(tmp, 'now.txt');
   await fs.writeFile(
     newTxt,
@@ -31,7 +31,7 @@ test('watchGlob', async() => {
     wg.on('start', () => count++);
     wg.on('change', () => count++);
     wg.on('error', reject);
-    wg.on('exec', async() => {
+    wg.on('exec', async () => {
       count++;
       if (count > 2) {
         await wg.close();
@@ -51,7 +51,7 @@ test('watchGlob', async() => {
   assert.equal(count, 4);
 });
 
-test('watchGlob invalid', async() => {
+test('watchGlob invalid', async () => {
   assert.throws(() => new WatchGlob());
   assert.throws(() => new WatchGlob({}));
   assert.throws(() => new WatchGlob({exec: 'foo'}));
@@ -95,7 +95,7 @@ test('watchGlob bad exec exit', async t => {
   await wg.start();
   await new Promise((resolve, reject) => {
     wg.on('exec', reject);
-    wg.on('error', async() => {
+    wg.on('error', async () => {
       await wg.close();
       resolve();
     });
@@ -127,7 +127,7 @@ test('watchGlob exec signal', async t => {
   await wg.start();
   await new Promise((resolve, reject) => {
     wg.on('exec', reject);
-    wg.on('error', async() => {
+    wg.on('error', async () => {
       await wg.close();
       resolve();
     });

@@ -12,7 +12,7 @@ import {types} from 'mime-types';
 types.crlf = 'application/x-hostlocal-crlf';
 const CHUNKS = fileURLToPath(new URL('./fixtures/chunks.js', import.meta.url));
 
-test('staticFile', async() => {
+test('staticFile', async () => {
   const opts = await normalizeOptions({
     config: 'DOES_NOT_EXIST',
     rawMarkdown: true,

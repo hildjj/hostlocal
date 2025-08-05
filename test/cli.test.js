@@ -3,7 +3,7 @@ import {cli} from '../lib/cli.js';
 import snap from 'snappy-snaps';
 import test from 'node:test';
 
-test('help', async() => {
+test('help', async () => {
   let stdout = '';
   let stderr = '';
   const out = {

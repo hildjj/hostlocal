@@ -61,7 +61,7 @@ test('hostLocal', async t => {
   assert.equal(openFn.mock.callCount(), 1);
 
   // Same port, should fail startup.
-  await assert.rejects(async() => {
+  await assert.rejects(async () => {
     const failServer = await hostLocal(root, {
       caDir: path.join(tmp, 'fail'),
       certDir: path.join(tmp, 'fail'),

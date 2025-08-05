@@ -50,40 +50,40 @@
     "version": "package-extract -so src/version.ts name version && git add src/version.ts"
   },
   "dependencies": {
-    "@cto.af/ca": "1.1.2",
-    "@cto.af/http-headers": "1.0.1",
-    "@cto.af/log": "1.0.1",
-    "@cto.af/utils": "1.2.1",
+    "@cto.af/ca": "1.1.3",
+    "@cto.af/http-headers": "1.0.2",
+    "@cto.af/log": "1.0.2",
+    "@cto.af/utils": "1.2.2",
     "chokidar": "4.0.3",
     "commander": "14.0.0",
     "fast-glob": "3.3.3",
     "jsrsasign": "11.1.0",
     "markdown-it": "14.1.0",
     "mime-types": "3.0.1",
-    "open": "10.1.2",
-    "ws": "8.18.2"
+    "open": "10.2.0",
+    "ws": "8.18.3"
   },
   "devDependencies": {
-    "@cto.af/eslint-config": "6.0.9",
-    "@eslint/markdown": "6.6.0",
-    "@playwright/test": "1.53.1",
+    "@cto.af/eslint-config": "6.0.13",
+    "@eslint/markdown": "7.1.0",
+    "@playwright/test": "1.54.2",
     "@types/jsrsasign": "10.5.15",
     "@types/markdown-it": "14.1.2",
     "@types/mime-types": "3.0.1",
-    "@types/node": "24.0.3",
+    "@types/node": "24.2.0",
     "@types/ws": "8.18.1",
     "c8": "10.1.3",
-    "eslint": "9.29.0",
-    "eslint-plugin-jsdoc": "51.0.5",
+    "eslint": "9.32.0",
+    "eslint-plugin-jsdoc": "52.0.2",
     "node-mocks-http": "1.17.2",
-    "package-extract": "3.1.0",
+    "package-extract": "3.1.3",
     "rimraf": "6.0.1",
     "snappy-snaps": "1.1.0",
-    "typedoc": "0.28.5",
-    "typescript": "5.8.3",
-    "typescript-eslint": "8.34.1"
+    "typedoc": "0.28.9",
+    "typescript": "5.9.2",
+    "typescript-eslint": "8.39.0"
   },
-  "packageManager": "pnpm@10.12.1",
+  "packageManager": "pnpm@10.14.0",
   "engines": {
     "node": ">=20"
   }
