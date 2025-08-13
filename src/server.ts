@@ -9,6 +9,7 @@ import type {TLSSocket} from 'node:tls';
 import {WatchGlob} from './watchGlob.js';
 import {WatchSet} from './watchSet.js';
 import {WebSocketServer} from 'ws';
+import {errorHTML} from './errorHtml.js';
 import http from 'node:http';
 import http2 from 'node:http2';
 import path from 'node:path';
@@ -19,6 +20,7 @@ export interface ServerEvents {
   listen: [url: URL];
   wsmessage: [json: any];
   error: [error: Error];
+  exec: [error?: Error];
 }
 
 export class HostLocalServer extends EventEmitter<ServerEvents> {
@@ -55,19 +57,6 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
       clearTimeout(this.#certTimout);
     });
 
-    // Files we're going to watch before executing build step.
-    // Usually inputs to be built into the files we serve.
-    if (this.#opts.glob?.length) {
-      this.#wg = new WatchGlob({
-        ...this.#opts,
-        signal: this.#ac.signal,
-      });
-      this.#wg.on('error', (er: unknown) => {
-        this.emit('error', er as Error);
-        this.#opts.log?.error(er);
-      });
-    }
-
     // Watch for files we've served.
     const watcher = new WatchSet({
       wait: 100,
@@ -82,6 +71,28 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
       this.#notify(urls);
     });
 
+    // Files we're going to watch before executing build step.
+    // Usually inputs to be built into the files we serve.
+    if (this.#opts.glob?.length) {
+      this.#wg = new WatchGlob({
+        ...this.#opts,
+        signal: this.#ac.signal,
+      });
+      this.#wg.on('before', (cmd: string) => {
+        this.#state.execError = '';
+        this.#opts.log?.info('Executing "%s"', cmd);
+      });
+      this.#wg.on('exec', () => {
+        this.emit('exec');
+      });
+      this.#wg.on('error', (e: unknown) => {
+        const er = e as Error;
+        this.emit('exec', er);
+        this.#state.execError = er.message;
+        watcher.changeAll();
+      });
+    }
+
     this.#state = {
       headers: {
         'Server': `${pkgName}/${pkgVersion}`,
@@ -91,6 +102,7 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
       base: this.#opts.dir,
       baseURL: this.#base(),
       watcher,
+      execError: undefined,
     };
   }
 
@@ -120,8 +132,13 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
       cert: this.#cert.cert,
       allowHTTP1: true, // Needed to make ws work
     }, async (req, res) => {
-      const code = await staticFile(this.#opts, this.#state, req, res);
-      this.#opts.log?.info('%s %d %s', req.method, code, req.url);
+      if (this.#state.execError) {
+        const code = errorHTML(this.#opts, this.#state, req, res);
+        this.#opts.log?.info('%s %d %s', req.method, code, req.url);
+      } else {
+        const code = await staticFile(this.#opts, this.#state, req, res);
+        this.#opts.log?.info('%s %d %s', req.method, code, req.url);
+      }
     });
 
     // HTTP2 doesn't have closeAllConnections

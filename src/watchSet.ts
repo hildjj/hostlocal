@@ -1,6 +1,7 @@
 import {type DebounceOptions, DebounceSet} from './debounce.js';
 import chokidar, {type FSWatcher} from 'chokidar';
 import {EventEmitter} from 'node:events';
+import path from 'node:path';
 
 interface WatchSetEvents {
   change: [files: string[]];
@@ -61,6 +62,24 @@ export class WatchSet extends EventEmitter<WatchSetEvents> {
    */
   public remove(file: string): this {
     this.#watcher.unwatch(file);
+    return this;
+  }
+
+  /**
+   * Send change notifications for every watched file.
+   *
+   * @returns Self, for chaining.
+   */
+  public changeAll(): this {
+    this.#set.clear();
+    const all: string[] = [];
+    for (const [dir, files] of Object.entries(this.#watcher.getWatched())) {
+      for (const f of files) {
+        const fn = path.join(dir, f);
+        all.push(fn);
+      }
+    }
+    this.emit('change', all);
     return this;
   }
 

@@ -17,6 +17,7 @@ export interface ServerState {
   baseURL: URL;
   watcher: WatchSet;
   headers: http2.OutgoingHttpHeaders;
+  execError?: string | undefined;
 }
 
 const FAVICON = 'favicon.ico';
