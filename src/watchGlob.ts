@@ -58,6 +58,7 @@ interface WatchGlobEvents {
   change: [file: string];
   error: [error: unknown];
   close: [];
+  before: [cmd: string];
   exec: [];
 }
 
@@ -144,20 +145,30 @@ export class WatchGlob extends EventEmitter<WatchGlobEvents> {
 
   #exec(): Promise<void> {
     return new Promise<void>((resolve, reject) => {
+      this.emit('before', this.#cmd);
+      let output = '';
       const child = spawn(this.#cmd, {
         shell: true,
         cwd: this.#cwd,
-        stdio: 'inherit',
+        stdio: ['ignore', 'pipe', 'pipe'],
         windowsHide: true,
         signal: this.#signal,
         timeout: this.#timeout,
       });
       child.on('error', reject);
+      child.stdout.on('data', d => {
+        process.stdout.write(d);
+        output += d;
+      });
+      child.stderr.on('data', d => {
+        process.stderr.write(d);
+        output += d;
+      });
       child.on('close', (code, signal) => {
         if (signal) {
-          reject(new Error(`exited ${this.#cmd} due to signal ${signal}`));
+          reject(new Error(`exited ${this.#cmd} due to signal ${signal} with output:\n${output}`));
         } else if (code) {
-          reject(new Error(`exited "${this.#cmd}" with code ${code}`));
+          reject(new Error(`exited "${this.#cmd}" with code ${code} with output:\n${output}`));
         } else {
           resolve();
         }

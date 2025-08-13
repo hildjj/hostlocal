@@ -90,7 +90,7 @@ test('watchGlob bad exec exit', async t => {
   const wg = new WatchGlob({
     glob: '*.ts',
     cwd: tmp,
-    exec: 'exit 1',
+    exec: 'grep foo ___INVALID_FILE_DOES_NOT_EXIST____',
   });
   await wg.start();
   await new Promise((resolve, reject) => {

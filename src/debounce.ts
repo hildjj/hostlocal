@@ -63,6 +63,16 @@ export class DebounceSet<T = string> {
     this.#timeout = setTimeout(() => this.#notify(), this.#opts.wait);
   }
 
+  /**
+   * Delete all pending notifications.
+   */
+  public clear(): void {
+    if (this.#timeout) {
+      clearTimeout(this.#timeout);
+    }
+    this.#contents.clear();
+  }
+
   public close(): void {
     if (this.#timeout) {
       clearTimeout(this.#timeout);
