@@ -15,6 +15,10 @@ import http2 from 'node:http2';
 import path from 'node:path';
 import {promiseWithResolvers} from '@cto.af/utils';
 
+export type {
+  RequiredHostOptions,
+};
+
 export interface ServerEvents {
   close: [];
   listen: [url: URL];
