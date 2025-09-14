@@ -66,7 +66,7 @@ async function findExistingFile(
  * @param error Possibly an error, usually null.
  */
 export function __debugError(
-  log: Logger | null,
+  log: Logger | null | undefined,
   error: NodeJS.ErrnoException | null
 ): void {
   if (error) {

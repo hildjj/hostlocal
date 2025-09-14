@@ -42,6 +42,7 @@ test('hostLocal', async t => {
     logLevel: 3,
     signal: ac.signal,
     prefix: 'foo',
+    temp: true,
     // Shut the server down when the cert expires.
     notAfterDays: 62 / (24 * 60 * 60), // 60s before is when stop happens.
   });
@@ -74,6 +75,7 @@ test('hostLocal', async t => {
       open: null,
       port: 9111,
       logLevel: 3,
+      temp: true,
     });
     await failServer.start();
   });
@@ -100,6 +102,7 @@ test('glob exec', async () => {
     glob: [foo],
     exec: `grep foo ${foo}`,
     initial: true,
+    temp: true,
   });
 
   let fu = '';
@@ -137,6 +140,7 @@ test('IPv6 URL', async () => {
     open: false,
     port: 9113,
     logLevel: 3,
+    temp: true,
   });
   const url = await server.start();
   assert.equal(url.toString(), 'https://[::1]:9113/');

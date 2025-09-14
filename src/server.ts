@@ -51,7 +51,7 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
     this.#certTimout = setTimeout(() => {
       this.#opts.log?.error(
         'Certificate about to be invalid (%s).  Shutting down.',
-        cert.notAfter
+        cert.notAfter.toISOString()
       );
       this.#ac.abort();
     }, afterTime);
@@ -147,10 +147,12 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
 
     // HTTP2 doesn't have closeAllConnections
     this.#server.on('connection', (s: Socket) => {
-      this.#opts.log?.trace('Add sock %s:%d', s.remoteAddress, s.remotePort);
+      const {remoteAddress = 'unknown'} = s;
+
+      this.#opts.log?.trace('Add sock %s:%d', remoteAddress, s.remotePort ?? -1);
       this.#socks.add(s);
       s.once('close', () => {
-        this.#opts.log?.trace('Remove sock %s:%d', s.remoteAddress, s.remotePort);
+        this.#opts.log?.trace('Remove sock %s:%d', remoteAddress, s.remotePort ?? -1);
         this.#socks.delete(s);
       });
     });
@@ -190,9 +192,13 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
       }
     });
 
+    const host = Array.isArray(this.#opts.host) ?
+      this.#opts.host[0] :
+      this.#opts.host;
+
     this.#server.listen({
       port: this.#opts.port,
-      host: this.#opts.host,
+      host,
       ipv6Only: this.#opts.ipv6,
       signal: this.#ac.signal,
     }, () => {
@@ -230,7 +236,7 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
         this.emit('error', er);
         this.#opts.log?.fatal(er.message);
       });
-      this.#opts.log?.info('Listening on: %s', base);
+      this.#opts.log?.info('Listening on: %s', base.toString());
       if (this.#opts.open && (typeof this.#opts.open === 'string')) {
         const u = new URL(this.#opts.open, base).toString();
         // Ignore promise
@@ -255,7 +261,8 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
   }
 
   #base(): URL {
-    const {host, port} = this.#opts;
+    const {host: ha, port} = this.#opts;
+    const host = Array.isArray(ha) ? ha[0] : ha;
     const urlHost = host.includes(':') ? `[${host}]` : host;
     let {prefix} = this.#opts;
     if (!prefix.endsWith('/')) {

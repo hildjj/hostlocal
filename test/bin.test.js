@@ -24,6 +24,7 @@ test(
       '',
       '--port',
       '9115',
+      '--temp',
     ], {
       stdio: ['ignore', 'pipe', 'inherit'],
     });

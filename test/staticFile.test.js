@@ -21,6 +21,7 @@ test('staticFile', async () => {
     CGI: {
       'application/x-hostlocal-crlf': CHUNKS,
     },
+    temp: true,
   });
   const state = {
     headers: {
