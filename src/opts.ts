@@ -1,13 +1,13 @@
 import {type CertOptions, DEFAULT_CERT_OPTIONS} from '@cto.af/ca';
 import {OutgoingHttpHeaders} from 'node:http2';
+import {childLogger} from '@cto.af/log';
+import {errCode} from '@cto.af/utils';
 import fs from 'node:fs/promises';
-import {getLog} from '@cto.af/log';
 import open from 'open';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
 
-export interface HostOptions extends CertOptions {
-
+export interface HostOnlyOptions {
   /** Config file name. */
   config?: string | null;
 
@@ -31,7 +31,7 @@ export interface HostOptions extends CertOptions {
   headers?: OutgoingHttpHeaders;
 
   /** Hostname or IP address to listen on. "::" for everything. */
-  host?: string;
+  host?: string | string[];
 
   /** List of files to try in order if a directory is specified as URL. */
   index?: string[];
@@ -76,7 +76,8 @@ export interface HostOptions extends CertOptions {
   timeout?: number | null;
 }
 
-export type RequiredHostOptions = Required<HostOptions>;
+export type HostOptions = HostOnlyOptions & CertOptions;
+export type RequiredHostOptions = Required<HostOnlyOptions> & CertOptions;
 
 export const DEFAULT_HOST_OPTIONS: RequiredHostOptions = {
   ...DEFAULT_CERT_OPTIONS,
@@ -86,7 +87,7 @@ export const DEFAULT_HOST_OPTIONS: RequiredHostOptions = {
   CGI: Object.create(null),
   glob: [],
   headers: Object.create(null),
-  host: 'localhost',
+  host: ['localhost', '::1', '127.0.0.1'],
   index: ['index.html', 'index.htm', 'README.md'],
   initial: false,
   ipv6: false,
@@ -123,53 +124,50 @@ export async function normalizeOptions(
       const c = await import(fullConfig);
       config = c.default;
     } catch (e) {
-      const err = e as NodeJS.ErrnoException;
-      if (err.code !== 'ERR_MODULE_NOT_FOUND') {
+      if (!errCode(e, 'ERR_MODULE_NOT_FOUND')) {
         throw e;
       }
     }
   }
 
-  const rest: RequiredHostOptions = {
+  const opts: RequiredHostOptions = {
     ...DEFAULT_HOST_OPTIONS,
     ...config,
     ...options,
   };
 
   // Backward-compatibility
-  if (typeof rest.glob === 'string') {
-    rest.glob = [rest.glob];
+  if (typeof opts.glob === 'string') {
+    opts.glob = [opts.glob];
   }
 
-  if (rest.prefix) {
+  if (opts.prefix) {
     // Ensure rest.prefix starts with / and does not end with /
     // eslint-disable-next-line prefer-template
-    rest.prefix = '/' + rest.prefix.trim().replace(/^[/.]+/, '');
+    opts.prefix = '/' + opts.prefix.trim().replace(/^[/.]+/, '');
 
-    let last = rest.prefix.length;
+    let last = opts.prefix.length;
     for (let i = last - 1; i >= 0; i--) {
-      if (rest.prefix[i] !== '/') {
+      if (opts.prefix[i] !== '/') {
         break;
       }
       last = i;
     }
-    rest.prefix = rest.prefix.slice(0, last);
+    opts.prefix = opts.prefix.slice(0, last);
   } else {
-    rest.prefix = '';
+    opts.prefix = '';
   }
 
   if (root) {
-    rest.dir = root;
+    opts.dir = root;
   }
-  rest.dir = await fs.realpath(rest.dir);
+  opts.dir = await fs.realpath(opts.dir);
 
-  rest.log = getLog({
-    logFile: rest.logFile,
-    logLevel: rest.logLevel,
-  }, {
-    host: rest.host,
-    port: rest.port,
+  opts.log = childLogger(opts, {
+    host: opts.host,
+    port: opts.port,
+    ns: 'host',
   });
-  rest.log.debug(rest, 'Normalized options');
-  return rest;
+  opts.log.debug('Normalized options: %o', opts);
+  return opts;
 }

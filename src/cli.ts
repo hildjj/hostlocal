@@ -74,6 +74,11 @@ export async function cli(
         .argParser(toInt)
         .hideHelp()
     )
+    .addOption(
+      // Testing only
+      new Option('--temp', 'Use temporary certificate')
+        .hideHelp()
+    )
     .argument('[directory]', 'Directory to serve. (default: cwd)')
     .configureHelp({
       sortOptions: true,
