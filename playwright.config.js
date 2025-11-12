@@ -23,6 +23,7 @@ const projects = [
     name: 'firefox',
     use: {
       ...devices['Desktop Firefox'],
+      ignoreHTTPSErrors: true,
     },
   },
   {
@@ -69,7 +70,7 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: `node bin/hostlocal.js -v -P ${prefix} -g README.md --shutTimes ${projects.length * repeats} -o ""`,
+    command: `node bin/hostlocal.js -v --temp -P ${prefix} -g README.md --shutTimes ${projects.length * repeats} -o ""`,
     url: baseURL,
     reuseExistingServer: !isCI,
     ignoreHTTPSErrors: true,
