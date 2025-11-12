@@ -1,6 +1,7 @@
 'use strict';
 
-/** @type {import('typedoc').TypeDocOptions} */
+/** @import * as typedoc from 'typedoc'; */
+/** @type {typedoc.TypeDocOptions} */
 module.exports = {
   entryPoints: ['src/index.ts', 'src/server.ts'],
   out: 'docs',

@@ -79,10 +79,9 @@ file, by default called ".hostlocal.js".  This is an ES6 module with a default
 export containing your config.  Its default value is:
 
 ```js
-/**
- * @type {import('./lib/index.js').HostOptions}
- */
-export default {
+import {defineConfig} from './lib/config.js';
+
+export default defineConfig({
   certDir: '.cert',
   config: '.hostlocal.js',
   dir: process.cwd(),
@@ -104,7 +103,7 @@ export default {
   script: true,
   signal: null,
   timeout: null,
-};
+});
 ```
 
 Command-line options take precedence over these.  Most of these match their

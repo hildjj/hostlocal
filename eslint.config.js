@@ -1,3 +1,4 @@
+import {defineConfig, globalIgnores} from 'eslint/config';
 import es6 from '@cto.af/eslint-config/es6.js';
 import globals from '@cto.af/eslint-config/globals.js';
 import jsdoc from '@cto.af/eslint-config/jsdoc.js';
@@ -6,21 +7,26 @@ import markdown from '@cto.af/eslint-config/markdown.js';
 import mod from '@cto.af/eslint-config/module.js';
 import ts from '@cto.af/eslint-config/ts.js';
 
-export default [
+export default defineConfig(
+  globalIgnores([
+    '**/*.d.ts',
+    'lib/**',
+    'docs/**',
+    'test/fixtures/**', // Intentionally invalid
+  ]),
+  es6,
+  mod,
+  ts,
+  jsdoc,
+  jts,
+  markdown,
   {
-    ignores: [
-      '**/*.d.ts',
-      'lib/**',
-      'docs/**',
-      'test/fixtures/**', // Intentionally invalid
-    ],
+    files: ['src/*.ts'],
+    rules: {
+      'jsdoc/require-throws-type': 'off',
+      'jsdoc/require-yields-type': 'off',
+    },
   },
-  ...es6,
-  ...mod,
-  ...ts,
-  ...jsdoc,
-  ...jts,
-  ...markdown,
   {
     files: [
       'src/client.ts',
@@ -32,5 +38,5 @@ export default [
       'no-console': 'off',
       'n/no-unsupported-features/node-builtins': 'off',
     },
-  },
-];
+  }
+);
