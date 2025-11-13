@@ -1,6 +1,6 @@
 {
   "name": "hostlocal",
-  "version": "2.2.1",
+  "version": "2.3.0",
   "decription": "Serve files from a directory over HTTP/1.1 and HTTP/2, with live reload notifications over a websocket.",
   "main": "lib/index.js",
   "type": "module",
