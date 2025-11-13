@@ -1,7 +1,6 @@
-/**
- * @type {import('./lib/index.js').HostOptions}
- */
-export default {
+import {defineConfig} from './lib/config.js';
+
+export default defineConfig({
   port: 9000,
   dir: 'coverage/lcov-report',
   glob: [
@@ -14,4 +13,4 @@ export default {
   exec: 'npm run test',
   initial: true,
   timeout: 30000,
-};
+});

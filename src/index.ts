@@ -2,7 +2,7 @@ import {type HostOptions, normalizeOptions} from './opts.js';
 import {HostLocalServer} from './server.js';
 import {createCert} from '@cto.af/ca';
 
-export type {HostOptions} from './opts.js';
+export type {HostOptions, HostOnlyOptions} from './opts.js';
 export type {AnyKey, CertOptions, KeyCert} from '@cto.af/ca';
 
 /**

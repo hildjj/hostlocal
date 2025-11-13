@@ -1,9 +1,7 @@
-/* eslint-disable jsdoc/imports-as-dependencies */
 import {defineConfig, devices} from '@playwright/test';
-import config from './.hostlocal.js';
+import config from './.hostPlaywright.js';
 
-const {port} = config;
-const prefix = '/prefix';
+const {port, prefix} = config;
 const baseURL = `https://localhost:${port}${prefix}/`;
 const isCI = Boolean(process.env.CI);
 
@@ -13,25 +11,20 @@ if (rei >= 0) {
   repeats = parseInt(process.argv[rei + 1], 10);
 }
 
-/**
- * @type {import('@playwright/test').Project[]}
- */
+/** @import {Project} from '@playwright/test' */
+/** @type {Project[]} */
 const projects = [
   {
     name: 'chromium',
     use: {...devices['Desktop Chrome']},
   },
-
   {
     name: 'firefox',
     use: {...devices['Desktop Firefox']},
-    ignoreHTTPSErrors: true,
   },
-
   {
     name: 'webkit',
     use: {...devices['Desktop Safari']},
-    ignoreHTTPSErrors: true,
   },
 ];
 
@@ -73,7 +66,7 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: `node bin/hostlocal.js -v --temp -P ${prefix} -g README.md --shutTimes ${projects.length * repeats} -o ""`,
+    command: `node bin/hostlocal.js -c ./.hostPlaywright.js --shutTimes ${projects.length * repeats}`,
     url: baseURL,
     reuseExistingServer: !isCI,
     ignoreHTTPSErrors: true,

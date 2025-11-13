@@ -10,7 +10,7 @@ import http2 from 'node:http2';
 import mt from 'mime-types';
 import {parse} from '@cto.af/http-headers';
 import path from 'node:path';
-import {pipeline} from 'node:stream';
+import {pipeline} from 'node:stream/promises';
 
 export interface ServerState {
   base: string;
@@ -203,7 +203,12 @@ export async function staticFile(
         }
         res.writeHead(OK, info.headers);
       });
-      pipeline(req, c, add, res, __debugError.bind(null, opts.log));
+
+      // Don't await. The promise will resolve after
+      // the stream ends, which means it will dangle in the tests.
+      pipeline(req, c, add, res, {
+        signal: opts.signal ?? undefined,
+      }).catch(__debugError.bind(null, opts.log));
       return OK;
     }
 
@@ -239,9 +244,11 @@ export async function staticFile(
     transforms.unshift(fh.createReadStream());
     transforms.push(res);
     res.writeHead(OK, headers);
-    // Don't use the promise version of this. The promise will resolve after
+    // Don't await. The promise will resolve after
     // the stream ends, which means it will dangle in the tests.
-    pipeline(transforms, __debugError.bind(null, opts.log));
+    pipeline(transforms, {
+      signal: opts.signal ?? undefined,
+    }).catch(__debugError.bind(null, opts.log));
     return OK;
   } catch (e) {
     const err = e as NodeJS.ErrnoException;
