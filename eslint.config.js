@@ -21,13 +21,6 @@ export default defineConfig(
   jts,
   markdown,
   {
-    files: ['src/*.ts'],
-    rules: {
-      'jsdoc/require-throws-type': 'off',
-      'jsdoc/require-yields-type': 'off',
-    },
-  },
-  {
     files: [
       'src/client.ts',
     ],

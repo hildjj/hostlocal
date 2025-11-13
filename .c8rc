@@ -8,6 +8,8 @@
     "**/test-web/**",
     "**/node_modules/**",
     ".hostlocal.js",
+    ".hostPlaywright.js",
     "playwright.config.js"
-  ]
+  ],
+  "excludeAfterRemap": true
 }

@@ -133,7 +133,7 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
 
     this.#server = http2.createSecureServer({
       key: this.#cert.key,
-      cert: this.#cert.cert,
+      cert: this.#cert.chain,
       allowHTTP1: true, // Needed to make ws work
     }, async (req, res) => {
       if (this.#state.execError) {
