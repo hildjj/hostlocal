@@ -1,4 +1,6 @@
 .cert/
+.devcontainer/
+.pnpm-store/
 coverage/
 docs/
 lib/

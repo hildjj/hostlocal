@@ -246,6 +246,7 @@ export async function staticFile(
     res.writeHead(OK, headers);
     // Don't await. The promise will resolve after
     // the stream ends, which means it will dangle in the tests.
+    // @ts-expect-error Can't think of a way to get the new types right.
     pipeline(transforms, {
       signal: opts.signal ?? undefined,
     }).catch(__debugError.bind(null, opts.log));
