@@ -1,9 +1,36 @@
 import {defineConfig, devices} from '@playwright/test';
 import config from './.hostPlaywright.js';
+import {fileURLToPath} from 'node:url';
+import fs from 'node:fs';
+import {join} from 'node:path';
+import tls from 'node:tls';
+import {tmpdir} from 'node:os';
+
+if (!process.env.HOSTLOCAL_TEMP_CA_FILE) {
+  const tmp = fs.mkdtempSync(join(tmpdir(), 'hostlocal-playwright'));
+  process.env.HOSTLOCAL_TEMP_CA_FILE = join(tmp, 'temp.cert');
+  process.env.PLAYWRIGHT_FIREFOX_POLICIES_JSON = join(tmp, 'firefox-policies.json');
+}
 
 const {port, prefix} = config;
 const baseURL = `https://localhost:${port}${prefix}/`;
 const isCI = Boolean(process.env.CI);
+
+const origCsC = tls.createSecureContext;
+let cert = null;
+function CsC(options) {
+  const res = origCsC(options);
+  if (!cert) {
+    try {
+      cert = fs.readFileSync(process.env.HOSTLOCAL_TEMP_CA_FILE, 'utf8');
+    } catch (_ignored) {
+      return null;
+    }
+  }
+  res.context.addCACert(cert);
+  return res;
+}
+tls.createSecureContext = CsC;
 
 let repeats = 1;
 const rei = process.argv.indexOf('--repeat-each');
@@ -16,15 +43,22 @@ if (rei >= 0) {
 const projects = [
   {
     name: 'chromium',
-    use: {...devices['Desktop Chrome']},
+    use: {
+      ...devices['Desktop Chrome'],
+      ignoreHTTPSErrors: true,
+    },
   },
   {
+    // Firefox can use the correct CA Cert, so no need for ignoreHTTPSErrors.
     name: 'firefox',
     use: {...devices['Desktop Firefox']},
   },
   {
     name: 'webkit',
-    use: {...devices['Desktop Safari']},
+    use: {
+      ...devices['Desktop Safari'],
+      ignoreHTTPSErrors: true,
+    },
   },
 ];
 
@@ -34,6 +68,8 @@ const projects = [
 export default defineConfig({
   testDir: './test',
   testMatch: '*.pw.js',
+  globalSetup: fileURLToPath(new URL('./test/pw-global-setup.js', import.meta.url)),
+  globalTeardown: fileURLToPath(new URL('./test/pw-global-teardown.js', import.meta.url)),
 
   /* Run tests in files in parallel */
   fullyParallel: true,
@@ -58,7 +94,6 @@ export default defineConfig({
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
-    ignoreHTTPSErrors: true,
   },
 
   /* Configure projects for major browsers */
@@ -69,9 +104,9 @@ export default defineConfig({
     command: `node bin/hostlocal.js -c ./.hostPlaywright.js --shutTimes ${projects.length * repeats}`,
     url: baseURL,
     reuseExistingServer: !isCI,
-    ignoreHTTPSErrors: true,
     timeout: 30000,
     stdout: 'pipe',
     stderr: 'pipe',
+    gracefulShutdown: {signal: 'SIGINT', timeout: 500},
   },
 });

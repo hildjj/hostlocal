@@ -10,6 +10,7 @@ import {WatchGlob} from './watchGlob.js';
 import {WatchSet} from './watchSet.js';
 import {WebSocketServer} from 'ws';
 import {errorHTML} from './errorHtml.js';
+import fs from 'node:fs/promises';
 import http from 'node:http';
 import http2 from 'node:http2';
 import path from 'node:path';
@@ -147,12 +148,12 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
 
     // HTTP2 doesn't have closeAllConnections
     this.#server.on('connection', (s: Socket) => {
-      const {remoteAddress = 'unknown'} = s;
+      const {remoteAddress = 'unknown', remotePort = -1} = s;
 
-      this.#opts.log?.trace('Add sock %s:%d', remoteAddress, s.remotePort ?? -1);
+      this.#opts.log?.trace('Add sock %s:%d', remoteAddress, remotePort);
       this.#socks.add(s);
       s.once('close', () => {
-        this.#opts.log?.trace('Remove sock %s:%d', remoteAddress, s.remotePort ?? -1);
+        this.#opts.log?.trace('Remove sock %s:%d', remoteAddress, remotePort);
         this.#socks.delete(s);
       });
     });
@@ -213,8 +214,8 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
 
       this.#wss.on('connection', ws => {
         ws.on('error', (er: Error) => {
-          this.emit('error', er);
-          this.#opts.log?.error(er);
+          this.emit('error', er); // Coverage needed
+          this.#opts.log?.error(er); // Coverage needed
         });
         ws.on('message', msg => {
           const jmsg = JSON.parse(msg.toString());
@@ -233,8 +234,8 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
         });
       });
       this.#wss.on('error', er => {
-        this.emit('error', er);
-        this.#opts.log?.fatal(er.message);
+        this.emit('error', er); // Coverage needed
+        this.#opts.log?.fatal(er.message); // Coverage needed
       });
       this.#opts.log?.info('Listening on: %s', base.toString());
       if (this.#opts.open && (typeof this.#opts.open === 'string')) {
@@ -248,7 +249,17 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
       this.emit('listen', b);
     });
 
-    this.#server.on('close', () => this.emit('close'));
+    let tempCA: string | null = null;
+    if (this.caCert && this.#opts.temp && process.env.HOSTLOCAL_TEMP_CA_FILE) {
+      tempCA = process.env.HOSTLOCAL_TEMP_CA_FILE;
+      this.#opts.log?.debug('Writing temp CA file: "%s"', tempCA);
+      await fs.writeFile(tempCA, this.caCert);
+    }
+    this.#server.on('close', () => {
+      this.#rmCAfile().finally(() => {
+        this.emit('close');
+      });
+    });
     return promise;
   }
 
@@ -271,9 +282,21 @@ export class HostLocalServer extends EventEmitter<ServerEvents> {
     return new URL(prefix, `https://${urlHost}:${port}/`);
   }
 
+  async #rmCAfile(): Promise<void> {
+    const tempCA = process.env.HOSTLOCAL_TEMP_CA_FILE;
+    if (tempCA && this.#opts.temp) {
+      this.#opts.log?.debug('Deleting temp CA file: "%s"', tempCA);
+      await fs
+        .rm(tempCA)
+        .catch((e: unknown) => {
+          this.#opts.log?.error(String(e));
+        });
+    }
+  }
+
   #notify(urls: string[]): void {
     if (!this.#wss) {
-      return;
+      return; // Coverage needed
     }
 
     const msg = JSON.stringify({

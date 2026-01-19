@@ -150,3 +150,22 @@ test('IPv6 URL', async () => {
   assert(txt);
   await server.close();
 });
+
+test('fail removing temp CA cert file', async () => {
+  process.env.HOSTLOCAL_TEMP_CA_FILE = path.join(tmp, 'index-test-tempCA.cert');
+  const server = await hostLocal(root, {
+    host: '::1',
+    caDir: tmp,
+    certDir: tmp,
+    config: null,
+    open: false,
+    port: 9114,
+    logLevel: -3,
+    temp: true,
+  });
+  await server.start();
+  // Delete the CA file before close, to cause an error to be logged.
+  await fs.rm(process.env.HOSTLOCAL_TEMP_CA_FILE);
+  await server.close();
+  delete process.env.HOSTLOCAL_TEMP_CA_FILE;
+});

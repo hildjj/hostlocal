@@ -85,9 +85,7 @@ export async function cli(
     })
     .action((directory, opts) => {
       opts.signal = signal;
-      if (opts.quiet || opts.verbose) {
-        opts.logLevel = opts.verbose - opts.quiet;
-      }
+      opts.logLevel = opts.verbose - opts.quiet;
       return hostLocal(directory, opts).then(s => s.start())
         .then(() => undefined);
     })
