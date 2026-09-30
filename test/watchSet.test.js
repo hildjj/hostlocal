@@ -1,5 +1,5 @@
 import {WatchSet} from '../lib/watchSet.js';
-import assert from 'node:assert';
+import assert from 'node:assert/strict';
 import test from 'node:test';
 
 test('WatchSet', () => {

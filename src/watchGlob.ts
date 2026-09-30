@@ -76,6 +76,7 @@ export class WatchGlob extends EventEmitter<WatchGlobEvents> {
    * Create a WatchGlob.
    *
    * @param options Options for watching.
+   * @throws TypeError for bad options.
    */
   public constructor(options: WatchOptions) {
     super();

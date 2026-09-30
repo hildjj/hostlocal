@@ -1,4 +1,4 @@
-import assert from 'node:assert';
+import assert from 'node:assert/strict';
 import {fileURLToPath} from 'node:url';
 import {normalizeOptions} from '../lib/opts.js';
 import test from 'node:test';

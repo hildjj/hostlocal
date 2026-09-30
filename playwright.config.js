@@ -24,7 +24,7 @@ function CsC(options) {
     try {
       cert = fs.readFileSync(process.env.HOSTLOCAL_TEMP_CA_FILE, 'utf8');
     } catch (_ignored) {
-      return null;
+      return res;
     }
   }
   res.context.addCACert(cert);
