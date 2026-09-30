@@ -1,4 +1,4 @@
-import assert from 'node:assert';
+import assert from 'node:assert/strict';
 import {cli} from '../lib/cli.js';
 import snap from 'snappy-snaps';
 import test from 'node:test';

@@ -1,6 +1,6 @@
 import {__debugError, staticFile} from '../lib/staticFile.js';
 import {name, version} from '../lib/version.js';
-import assert from 'node:assert';
+import assert from 'node:assert/strict';
 import chokidar from 'chokidar';
 import {fileURLToPath} from 'node:url';
 import fs from 'node:fs/promises';

@@ -1,5 +1,5 @@
 import {DebounceSet, debounce} from '../lib/debounce.js';
-import assert from 'node:assert';
+import assert from 'node:assert/strict';
 import test from 'node:test';
 
 test('debounce', async () => {

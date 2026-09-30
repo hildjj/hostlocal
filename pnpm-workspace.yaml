@@ -1,0 +1,2 @@
+overrides:
+  "snappy-snaps>serialize-javascript": "7.1.2"

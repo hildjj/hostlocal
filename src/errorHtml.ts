@@ -2,7 +2,7 @@ import {AddClient, type FileInfo} from './html.js';
 import type {RequiredHostOptions} from './opts.js';
 import type {ServerState} from './staticFile.js';
 import ansiHTML from 'ansi-html';
-import assert from 'node:assert';
+import assert from 'node:assert/strict';
 import http2 from 'node:http2';
 import path from 'node:path';
 

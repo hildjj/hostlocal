@@ -1,7 +1,7 @@
 import {Readable, Writable, pipeline} from 'node:stream';
 import {Buffer} from 'node:buffer';
 import {CGI} from '../lib/cgi.js';
-import assert from 'node:assert';
+import assert from 'node:assert/strict';
 import {fileURLToPath} from 'node:url';
 import snap from 'snappy-snaps';
 import test from 'node:test';
@@ -81,6 +81,7 @@ test('CGI', async () => {
   assert.deepEqual(headers, {
     'content-type': 'text/html',
     'x-foo': 'bar',
+    '__proto__': null,
   });
   await snap('cgi crlf', stdout)
     .then(expected => {
