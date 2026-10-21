@@ -2,4 +2,4 @@
 // Do not modify by hand.
 
 export const name = 'hostlocal';
-export const version = '3.0.0';
+export const version = '3.0.1';
