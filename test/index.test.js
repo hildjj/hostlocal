@@ -16,6 +16,7 @@ test.before(t => {
   const origCsC = tls.createSecureContext;
   t.mock.method(tls, 'createSecureContext', options => {
     const res = origCsC(options);
+    console.log({res})
     for (const c of certs) {
       res.context.addCACert(c);
     }
@@ -131,7 +132,8 @@ test('glob exec', async () => {
   await p.promise;
 });
 
-test('IPv6 URL', async () => {
+test.only('IPv6 URL', async () => {
+
   const server = await hostLocal(root, {
     host: '::1',
     caDir: tmp,
@@ -145,10 +147,15 @@ test('IPv6 URL', async () => {
   const url = await server.start();
   assert.equal(url.toString(), 'https://[::1]:9113/');
   certs.push(server.caCert);
-  const res = await fetch('https://[::1]:9113/');
-  const txt = await res.text();
-  assert(txt);
-  await server.close();
+  console.log(server.caCert)
+  try {
+    const res = await fetch('https://[::1]:9113/');
+    console.log(3)
+    const txt = await res.text();
+    assert(txt);
+  } finally {
+    await server.close();
+  }
 });
 
 test('fail removing temp CA cert file', async () => {
