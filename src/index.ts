@@ -3,7 +3,7 @@ import {HostLocalServer} from './server.js';
 import {createCert} from '@cto.af/ca';
 
 export type {HostOptions, HostOnlyOptions} from './opts.js';
-export type {AnyKey, CertOptions, KeyCert} from '@cto.af/ca';
+export type {CertOptions, KeyCert} from '@cto.af/ca';
 
 /**
  * Server a directory via HTTPS.

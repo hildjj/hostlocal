@@ -145,10 +145,13 @@ test('IPv6 URL', async () => {
   const url = await server.start();
   assert.equal(url.toString(), 'https://[::1]:9113/');
   certs.push(server.caCert);
-  const res = await fetch('https://[::1]:9113/');
-  const txt = await res.text();
-  assert(txt);
-  await server.close();
+  try {
+    const res = await fetch('https://[::1]:9113/');
+    const txt = await res.text();
+    assert(txt);
+  } finally {
+    await server.close();
+  }
 });
 
 test('fail removing temp CA cert file', async () => {
